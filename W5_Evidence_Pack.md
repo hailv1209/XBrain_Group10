@@ -317,31 +317,13 @@ EgressRules:
     CidrIp: 0.0.0.0/0
 ```
 
-**Screenshot - EFS Configuration:**
-![EFS Configuration](./images/w5-mh3-efs-config.png)
+#### Mount EFS trên ECS
 
-#### Mount EFS trên Instance
+<img width="1591" height="612" alt="image" src="https://github.com/user-attachments/assets/665f60f4-4895-4f54-b0cc-64fc6f41bb02" />
 
-**EC2 Instance (App Tier):**
-
-```bash
-# Cài NFS utilities
-sudo yum install -y nfs-utils
-
-# Tạo mount point
-sudo mkdir -p /mnt/efs
-
-# Mount EFS
-sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
-  fs-0ed34a016c3fe7c67.efs.us-east-1.amazonaws.com:/ /mnt/efs
-
-# Verify mount
-df -h /mnt/efs
-# Output: fs-0ed34a016c3fe7c67.efs.us-east-1.amazonaws.com:/  1.0P  0   1.0P   0% /mnt/efs
-```
 
 **Screenshot - EFS Mount Successful:**
-![EFS Mount Success](./images/w5-mh3-efs-mount.png)
+<img width="1193" height="427" alt="image" src="https://github.com/user-attachments/assets/8b4178d2-8d5c-4529-a09b-6b84e90b31e7" />
 
 #### Write & Read Test
 
