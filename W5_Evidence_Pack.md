@@ -134,7 +134,7 @@ start end action log-status
 ```
 
 **Screenshot - VPC Flow Logs trong CloudWatch:**
-![VPC Flow Logs](./images/w5-mh1-flow-logs.png)
+<img width="819" height="344" alt="image" src="https://github.com/user-attachments/assets/afc3adc9-119c-43a9-a882-52bece877e18" />
 
 ### Connectivity Test
 
