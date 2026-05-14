@@ -8,6 +8,7 @@
 | Thông tin | Chi tiết |
 |-----------|---------|
 | **Nhóm** | XBrain_Group10 |
+| **Tên thành viên** | Lê Trần Tuấn Khanh, Trần Mạnh Trường, Trần Mạnh Cường, Nguyễn Đức Hảo, Lê Văn Hải, Phan Đức Huy, Lê Viết Quốc Hưng, Huỳnh Xuân Hậu, Nguyễn Thị Mến, Trần Quốc Hùng |
 | **Tuần** | W5 - The Network Fortress (11–15 tháng 5, 2026) |
 | **Deadline** | Thứ Sáu 15-05-2026 |
 | **Link Repository** | [Nhập link repo của nhóm] |
