@@ -53,59 +53,75 @@ Output:
 
 ---
 
-## 2. MH1 — Multi-VPC Connectivity (Làm cho network quan sát được)
+## 2. MH1 — Multi-VPC Connectivity
 
-### Lựa chọn Connectivity và Rationale
+### Connectivity Decision: Justified Single-VPC with Multi-AZ Enhancement
 
-**Path đã chọn:** [Chọn một trong ba]
-- ☐ **Path A — VPC Peering**
-- ☐ **Path B — AWS Transit Gateway**
-- ☐ **Path C — Justified Single-VPC** (với justification viết tay)
+**Path Selected:** ☑️ **Path C — Justified Single-VPC**
 
-**Justification:**
+**Rationale for AI Agent Chatbot Application:**
+
+Dự án **AI Agent Chatbot** của webapp-group10 hiện tại được thiết kế để chạy trong một VPC duy nhất với kiến trúc 3-tier rõ ràng, đáp ứng đầy đủ nhu cầu của ứng dụng chatbot:
+
+**Architecture Overview:**
 ```
-[Viết rõ lý do chọn path này]
-
-VD Path A: 
-Nhóm có 2 VPC (VPC app tier, VPC database tier) với CIDR không chồng (10.0.0.0/16 và 10.1.0.0/16). 
-Không cần transitive routing. Chọn VPC Peering vì đơn giản, point-to-point, rẻ hơn TGW.
-
-VD Path C:
-Ứng dụng chạy trên 1 VPC duy nhất (10.0.0.0/16) với 3 subnet multi-AZ (public, app-private, db-private). 
-Không có business case để tách VPC lúc này. Sẽ trigger VPC thứ hai khi scale lên nhiều region.
+┌─────────────────────────────────────────┐
+│  VPC: webapp-group10 (10.0.0.0/16)      │
+├─────────────────────────────────────────┤
+│                                         │
+│  Public Tier (Ingress):                 │
+│  - ALB (Application Load Balancer)      │
+│  - NAT Gateway (Egress traffic)         │
+│  ├─ Subnet: 10.0.1.0/24 (AZ-a)         │
+│  └─ Subnet: 10.0.2.0/24 (AZ-b)         │
+│                                         │
+│  Application Tier (Compute):            │
+│  - EC2 instances (Flask/Node.js app)   │
+│  - Lambda functions (Bedrock queries)   │
+│  - EFS mount targets (shared files)     │
+│  ├─ Subnet: 10.0.11.0/24 (AZ-a)        │
+│  └─ Subnet: 10.0.12.0/24 (AZ-b)        │
+│                                         │
+│  Data Tier (Storage & Database):        │
+│  - RDS PostgreSQL (conversation logs)   │
+│  - OpenSearch Serverless (KB vectors)   │
+│  ├─ Subnet: 10.0.21.0/24 (AZ-a)        │
+│  └─ Subnet: 10.0.22.0/24 (AZ-b)        │
+│                                         │
+└─────────────────────────────────────────┘
 ```
 
-### Cấu hình Connectivity
+**Justification cho Single-VPC:**
+1. **Đơn giản hóa kiến trúc:** Ứng dụng chatbot là single-tenant SaaS không cần network isolation cấp VPC. Tất cả components (web frontend, LLM backend, database, embedding store) thuộc về cùng một ứng dụng logic.
 
-#### VPC Peering (nếu chọn Path A)
+2. **Cost-effective:** Single-VPC không cần Transit Gateway ($0.05/hour = $36/month) hay VPC peering management overhead. VPC charge vẫn flat rate $0.07/day cho single VPC.
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Peering Connection ID** | pcx-xxxxxxxxxxxxx |
-| **VPC A** | vpc-xxxxxxxx (CIDR: 10.0.0.0/16) |
-| **VPC B** | vpc-yyyyyyyy (CIDR: 10.1.0.0/16) |
-| **Status** | ✅ Active |
-| **Route Table VPC A** | 10.1.0.0/16 → pcx-xxxxxxxxxxxxx |
-| **Route Table VPC B** | 10.0.0.0/16 → pcx-xxxxxxxxxxxxx |
+3. **Latency thấp:** Tất cả tầng chạy cùng VPC → không có inter-VPC latency. Quan trọng cho real-time chat response (target latency < 500ms từ user query tới bot answer).
 
-**Screenshot - Route Table VPC A:**
-![Route Table VPC A](./images/w5-mh1-route-table-vpca.png)
+4. **Easy troubleshooting:** VPC Flow Logs từ một VPC duy nhất dễ analyze hơn. Khi user báo "chatbot slow", có thể trace flow trên một VPC thay vì phải check routing giữa nhiều VPC.
 
-**Screenshot - Route Table VPC B:**
-![Route Table VPC B](./images/w5-mh1-route-table-vpcb.png)
+5. **Không có compliance requirement:** Chatbot application không cần comply PCI-DSS (không xử lý payment cards), HIPAA (không xử lý health data), hay bất kỳ regulation nào đòi hỏi network isolation cấp VPC.
 
-#### Transit Gateway (nếu chọn Path B)
+**Multi-AZ Enhancement for High Availability:**
+Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a và us-east-1b):
+- **Public subnets:** 10.0.1.0/24 (AZ-a), 10.0.2.0/24 (AZ-b)
+  - ALB listeners trên cả 2 AZ
+  - NAT Gateway trên cả 2 AZ (redundancy)
+  
+- **Private app subnets:** 10.0.11.0/24 (AZ-a), 10.0.12.0/24 (AZ-b)
+  - EC2 instances deploy trên cả 2 AZ (Auto Scaling Group)
+  - Lambda functions invoke từ cả 2 AZ
+  - EFS mount targets trên cả 2 AZ
+  
+- **Private data subnets:** 10.0.21.0/24 (AZ-a), 10.0.22.0/24 (AZ-b)
+  - RDS Multi-AZ standby
+  - OpenSearch Serverless replicated (automatic)
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Transit Gateway ID** | tgw-xxxxxxxxxxxxx |
-| **Attachment VPC 1** | tgw-attach-xxxxxxxx |
-| **Attachment VPC 2** | tgw-attach-yyyyyyyy |
-| **Attachment VPC 3** | tgw-attach-zzzzzzzz |
-| **TGW Route Table** | [ID và cấu hình] |
-
-**Screenshot - TGW Attachments:**
-![TGW Attachments](./images/w5-mh1-tgw-attachments.png)
+**Khi nào sẽ trigger Multi-VPC transition:**
+1. **Multi-region deployment:** Khi mở rộng sang Singapore, Tokyo, hoặc region khác → sẽ cần VPC riêng per region + Transit Gateway global hub
+2. **Separate staging/production:** Khi team scale và cần strict network isolation giữa prod (sensitive data) vs staging (test data) → sẽ tách thành VPC riêng
+3. **Third-party chatbot integration:** Khi integrate với partner APIs (Slack bot marketplace, Teams integration) → sẽ cần VPC peering với partner infrastructure
+4. **Compliance expansion:** Nếu sau này support healthcare/financial domain → HIPAA/PCI-DSS → sẽ cần dedicated VPC per compliance tier
 
 ### VPC Flow Logs (Bắt buộc cho mọi VPC)
 
