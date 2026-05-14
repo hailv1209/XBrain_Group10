@@ -1,5 +1,5 @@
 # Evidence Pack W5: The Network Fortress
-## webapp-group10
+## XBrain_Group10
 
 ---
 
@@ -7,11 +7,11 @@
 
 | Thông tin | Chi tiết |
 |-----------|---------|
-| **Nhóm** | webapp-group10 |
+| **Nhóm** | XBrain_Group10 |
 | **Tuần** | W5 - The Network Fortress (11–15 tháng 5, 2026) |
 | **Deadline** | Thứ Sáu 15-05-2026 |
 | **Link Repository** | [Nhập link repo của nhóm] |
-| **Evidence Pack tuần trước** | [W4_Evidence_Pack.md] |
+| **Evidence Pack tuần trước** | https://github.com/huyjaky/w4aws |
 | **Ngày tạo** | 14-05-2026 |
 
 ---
