@@ -90,6 +90,8 @@ Dự án **AI Agent Chatbot** của webapp-group10 hiện tại được thiết
 │                                         │
 └─────────────────────────────────────────┘
 ```
+<img width="975" height="504" alt="image" src="https://github.com/user-attachments/assets/07352be3-b2f8-45a4-9d80-f3c079fcf9fa" />
+
 
 **Justification cho Single-VPC:**
 1. **Đơn giản hóa kiến trúc:** Ứng dụng chatbot là single-tenant SaaS không cần network isolation cấp VPC. Tất cả components (web frontend, LLM backend, database, embedding store) thuộc về cùng một ứng dụng logic.
