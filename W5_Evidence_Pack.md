@@ -292,14 +292,15 @@ Connection timeout after 30s
 | **Performance Mode** | General Purpose |
 | **Throughput Mode** | Bursting |
 | **Encryption at Rest** | ✅ Enabled (KMS) |
-| **Lifecycle Policy** | Transition to IA after 30 days |
+| **Lifecycle Policy** | Transition to IA after 30 days, Transition into Archive after 90 days |
 
 **Mount Targets:**
 
 | Mount Target | Subnet | AZ | Security Group |
 |--------------|--------|-----|----------------|
-| fsmt-xxxxxxxx | subnet-app-1 | us-east-1a | sg-efs-mount |
-| fsmt-yyyyyyyy | subnet-app-2 | us-east-1b | sg-efs-mount |
+| fsmt-054f7205bc6cf2dc1 | subnet-036fb118a237b276c | us-east-1a | sg-0eb46af8830cb636f (webapp-group10-efs-sg) |
+| fsmt-0b7cbbdfdf6807008 | subnet-01c802af5ab604ed6 | us-east-1b | sg-0eb46af8830cb636f (webapp-group10-efs-sg) |
+| fsmt-01623bdaa071cebf0 | subnet-0148c1ed9dd01ab02 | us-east-1c | sg-0eb46af8830cb636f (webapp-group10-efs-sg) |
 
 **Security Group của Mount Target:**
 
