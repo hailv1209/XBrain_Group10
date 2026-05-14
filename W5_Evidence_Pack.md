@@ -281,12 +281,14 @@ Connection timeout after 30s
 
 #### Cấu hình EFS
 
+<img width="1484" height="611" alt="image" src="https://github.com/user-attachments/assets/5493e7fc-a5d7-48d8-8967-0b411f3e7519" />
+
+
 | Thông tin | Chi tiết |
 |-----------|---------|
-| **File System ID** | fs-0ed34a016c3fe7c67 |
+| **File System ID** | fs-0a4a0e5366e9cba6d |
 | **Tên** | webapp-group10-efs |
-| **Region** | us-east-1 |
-| **AZ** | us-east-1a, us-east-1b (Multi-AZ) |
+| **Region** | us-east-2 |
 | **Performance Mode** | General Purpose |
 | **Throughput Mode** | Bursting |
 | **Encryption at Rest** | ✅ Enabled (KMS) |
