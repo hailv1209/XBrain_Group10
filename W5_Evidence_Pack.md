@@ -145,8 +145,10 @@ Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a và u
 | File Storage | App → EFS | 10.0.11.x (mount target) | 2049 | NFS shared files |
 | Monitoring | App → CloudWatch | 0.0.0.0/0 | 443 | Logs + metrics publish |
 
-**Sample Flow Log Entry:**
+**Screenshot - VPC Flow Logs trong CloudWatch:**
+<img width="819" height="344" alt="image" src="https://github.com/user-attachments/assets/afc3adc9-119c-43a9-a882-52bece877e18" />
 
+**Sample Flow Log Entry:**
 ```
 version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes 
 start end action log-status
@@ -160,22 +162,6 @@ start end action log-status
 - port 3306: MySQL traffic
 - ACCEPT: traffic được cho phép
 ```
-
-**Screenshot - VPC Flow Logs trong CloudWatch:**
-<img width="819" height="344" alt="image" src="https://github.com/user-attachments/assets/afc3adc9-119c-43a9-a882-52bece877e18" />
-
-### Connectivity Test
-
-**Test 1: Cross-VPC Communication (Thành công)**
-
-```bash
-# Từ instance trong VPC A kết nối tới resource trong VPC B
-$ curl http://10.1.2.100:8080/health
-HTTP/1.1 200 OK
-```
-
-**Screenshot:**
-![Connectivity Test Success](./images/w5-mh1-connectivity-success.png)
 
 ---
 
