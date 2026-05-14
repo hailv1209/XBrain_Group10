@@ -220,6 +220,9 @@ Rules:
     Description: "Drop all other outbound domains"
 ```
 
+<img width="1604" height="740" alt="image" src="https://github.com/user-attachments/assets/22316abd-0cec-4b4b-832d-0f14eb2983a1" />
+
+
 **Screenshot - Firewall Rules:**
 ![Firewall Rules](./images/w5-mh2-firewall-rules.png)
 
@@ -242,7 +245,8 @@ Rules:
 ```
 
 **Screenshot - Blocked Request trong Alert Logs:**
-![Blocked Request Alert](./images/w5-mh2-alert-logs-blocked.png)
+<img width="975" height="504" alt="image" src="https://github.com/user-attachments/assets/5d707f84-e617-4209-9c2b-6dc38301c460" />
+
 
 **Allowed Request - Flow Log Entry:**
 
@@ -271,7 +275,8 @@ Connection timeout after 30s
 ```
 
 **Screenshot - Negative Test Result:**
-![Negative Test](./images/w5-mh2-negative-test.png)
+<img width="975" height="175" alt="image" src="https://github.com/user-attachments/assets/e9dc9fcd-4af9-4b89-ada6-0dffd02a7d8b" />
+
 
 ---
 
