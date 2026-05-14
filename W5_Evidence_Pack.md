@@ -125,13 +125,23 @@ Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a và u
 
 ### VPC Flow Logs (Bắt buộc cho mọi VPC)
 
-**Cấu hình Flow Logs:**
+**Status:** ✅ Enabled on all subnets in webapp-group10 VPC  
+**Destination:** CloudWatch Logs  
+**Log Group:** `/aws/vpc/flowlogs/webapp-group10-chatbot-vpc`  
+**Traffic Type:** ALL (Accept + Reject)  
+**Format:** Extended version with flow metadata
 
-| VPC | Destination | Format | Traffic Type |
-|-----|-------------|--------|-------------|
-| VPC-App | CloudWatch Logs | Default format | All |
-| VPC-DB | CloudWatch Logs | Default format | All |
-| (VPC khác nếu có) | S3 Bucket | Default format | All |
+**Key Traffic Flows Observable trong Logs:**
+
+| Flow Type | Source | Destination | Port | Purpose |
+|-----------|--------|-------------|------|---------|
+| User Query | User → ALB | 10.0.1.x | 443 | HTTPS traffic từ user tới chatbot |
+| App Processing | ALB → App tier | 10.0.11.x | 8080 | Flask/Node app processing |
+| LLM Query | Lambda → Bedrock | 0.0.0.0/0 | 443 | Bedrock API calls (via NAT) |
+| KB Search | App → OpenSearch | 10.0.21.x | 443 | Semantic search queries |
+| Chat History | App → RDS | 10.0.21.x | 5432 | Store conversation logs |
+| File Storage | App → EFS | 10.0.11.x (mount target) | 2049 | NFS shared files |
+| Monitoring | App → CloudWatch | 0.0.0.0/0 | 443 | Logs + metrics publish |
 
 **Sample Flow Log Entry:**
 
