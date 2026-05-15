@@ -361,9 +361,7 @@ Ngoài backup plan chính do nhóm cấu hình, hệ thống còn có automatic 
 
 #### Screenshot — Backup Plans
 
-```markdown
-![Backup Plans](./images/w5-backup-plans.png)
-```
+<img width="1615" height="317" alt="image" src="https://github.com/user-attachments/assets/eace3225-1072-4188-8533-e97bae74a351" />
 
 **Mô tả screenshot cần capture:**
 
@@ -393,9 +391,7 @@ Backup vault được sử dụng để lưu trữ recovery points của toàn b
 
 #### Screenshot — Backup Vault
 
-```markdown
-![Backup Vault](./images/w5-backup-vault.png)
-```
+<img width="1598" height="682" alt="image" src="https://github.com/user-attachments/assets/d3728182-daf5-4dd9-95b5-2d2c4161fbe1" />
 
 **Mô tả screenshot cần capture:**
 
@@ -429,18 +425,14 @@ AWS Backup được cấu hình để backup nhiều tài nguyên production qua
 | **EFS**       | arn:aws:elasticfilesystem:us-east-1:379353384462:file-system/fs-0ed34a016c3fe7c67 | ✅ Included |
 | **RDS**       | arn:aws:rds:us-east-1:379353384462:db:webapp-group10-database                     | ✅ Included |
 | **S3**        | arn:aws:s3:::webapp-group10-app-bucket                                            | ✅ Included |
-| **S3**        | arn:aws:s3:::webapp-group10-backend-env                                           | ✅ Included |
 | **S3**        | arn:aws:s3:::webapp-group10-frontend-bucket                                       | ✅ Included |
-| **S3**        | arn:aws:s3:::webapp-group10-kb-source                                             | ✅ Included |
-| **S3**        | arn:aws:s3:::webapp-group10-multimedia-kb                                         | ✅ Included |
+
 
 ---
 
 #### Screenshot — Resource Assignment
 
-```markdown
-![Backup Resource Assignment](./images/w5-backup-resource-assignment.png)
-```
+<img width="1604" height="498" alt="image" src="https://github.com/user-attachments/assets/3d968f7e-2329-4e4e-b8e5-886fc4178ca4" />
 
 **Mô tả screenshot cần capture:**
 
@@ -458,52 +450,22 @@ AWS Backup được cấu hình để backup nhiều tài nguyên production qua
 
 #### Backup Rule
 
-```yaml
-BackupPlan: webapp-group10-backup
-
-Rules:
-  - RuleName: daily-backup
-    TargetBackupVault: webapp-group10-vault
-
-    ScheduleExpression: "cron(0 2 * * ? *)"
-
-    Lifecycle:
-      MoveToColdStorageAfterDays: 30
-      DeleteAfterDays: 35
-
-    RecoveryPointTags:
-      Environment: production
-      Week: W5
-```
+<img width="1617" height="426" alt="image" src="https://github.com/user-attachments/assets/bc248314-4d53-4784-8a18-d5c1ce1202a3" />
 
 ---
-
-#### Backup Policy Summary
-
-| Configuration               | Value     |
-| --------------------------- | --------- |
-| **Backup Frequency**        | Daily     |
-| **Backup Time**             | 02:00 UTC |
-| **Cold Storage Transition** | 30 days   |
-| **Deletion Policy**         | 35 days   |
-
----
-
-#### Screenshot — Backup Rule Configuration
-
-```markdown
-![Backup Rule Configuration](./images/w5-backup-rule.png)
-```
 
 **Mô tả screenshot cần capture:**
 
-* AWS Console → AWS Backup → Backup Plan → Rules
-* Hiển thị:
-
-  * Schedule expression
-  * Backup frequency
-  * Lifecycle policy
-  * Target vault
+| Configuration                    | Value                            |
+| -------------------------------- | -------------------------------- |
+| **Backup Rule Name**             | webapp-group10-backup-rule       |
+| **Backup Frequency**             | Daily                            |
+| **Backup Time**                  | 12:30 AM Asia/Saigon (UTC+07:00) |
+| **Start Window**                 | Within 8 hours                   |
+| **Completion Window**            | Within 7 days                    |
+| **Backup Vault**                 | webapp-group10-vault             |
+| **Continuous Backup**            | Enabled                          |
+| **Total Retention Period**       | 5 weeks (35 days)                |
 
 ---
 
