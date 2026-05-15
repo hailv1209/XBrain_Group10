@@ -69,19 +69,7 @@ Output:
 5. **Không có compliance requirement:** Chatbot application không cần comply PCI-DSS (không xử lý payment cards), HIPAA (không xử lý health data), hay bất kỳ regulation nào đòi hỏi network isolation cấp VPC.
 
 **Multi-AZ Enhancement for High Availability:**
-Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a và us-east-1b):
-- **Public subnets:** 10.0.1.0/24 (AZ-a), 10.0.2.0/24 (AZ-b)
-  - ALB listeners trên cả 2 AZ
-  - NAT Gateway trên cả 2 AZ (redundancy)
-  
-- **Private app subnets:** 10.0.11.0/24 (AZ-a), 10.0.12.0/24 (AZ-b)
-  - EC2 instances deploy trên cả 2 AZ (Auto Scaling Group)
-  - Lambda functions invoke từ cả 2 AZ
-  - EFS mount targets trên cả 2 AZ
-  
-- **Private data subnets:** 10.0.21.0/24 (AZ-a), 10.0.22.0/24 (AZ-b)
-  - RDS Multi-AZ standby
-  - OpenSearch Serverless replicated (automatic)
+Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a, us-east-1b và us-east-1c):
 
 **Khi nào sẽ trigger Multi-VPC transition:**
 1. **Multi-region deployment:** Khi mở rộng sang Singapore, Tokyo, hoặc region khác → sẽ cần VPC riêng per region + Transit Gateway global hub
