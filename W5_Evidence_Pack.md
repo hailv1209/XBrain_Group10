@@ -1604,8 +1604,7 @@ sudo mount -t nfs4 fs-0ed34a016c3fe7c67.efs.us-east-1.amazonaws.com:/ /mnt/efs
 ## 9. Bonus - Stretch Goals (Tuỳ chọn)
 
 ### 9.1 VPC Reachability Analyzer
-
-    AWS Reachability Analyzer was used to validate internet connectivity paths. The public subnet path was successfully reachable, while the private subnet path failed due to routing configuration restrictions.
+AWS Reachability Analyzer was used to validate internet connectivity paths. The public subnet path was successfully reachable, while the private subnet path failed due to routing configuration restrictions.
     
   <img width="1920" height="510" alt="image" src="https://github.com/user-attachments/assets/d0610c9f-e4a0-41b5-a0b2-b142fad9432e" />
 
