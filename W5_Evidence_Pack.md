@@ -195,21 +195,6 @@ Flow Logs giúp:
 **Screenshot - VPC Flow Logs trong CloudWatch:**
 <img width="819" height="344" alt="image" src="https://github.com/user-attachments/assets/afc3adc9-119c-43a9-a882-52bece877e18" />
 
-**Sample Flow Log Entry:**
-```
-version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes 
-start end action log-status
-
-2 379353384462 eni-0123456789abcdef0 10.0.1.25 10.1.2.40 49158 3306 6 1 52 
-1620043391 1620043440 ACCEPT OK
-
-[Giải thích]
-- source: 10.0.1.25 (instance trong VPC A - app tier)
-- destination: 10.1.2.40 (RDS endpoint trong VPC B - database tier)
-- port 3306: MySQL traffic
-- ACCEPT: traffic được cho phép
-```
-
 
 ## 3. MH2 — Network Firewall Hardening (Ép buộc tại biên)
 
