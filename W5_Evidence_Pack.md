@@ -659,7 +659,7 @@ Request có chứa API Key hợp lệ sẽ truy cập thành công API Gateway e
 ### curl Test
 
 ```bash
-curl -X GET "https://<api-id>.execute-api.<region>.amazonaws.com/prod/health" \
+curl -X GET "https://aws.hungtran.id.vn/health" \
   -H "x-api-key: <valid-api-key>"
 ```
 
@@ -669,9 +669,53 @@ curl -X GET "https://<api-id>.execute-api.<region>.amazonaws.com/prod/health" \
 HTTP/1.1 200 OK
 
 {
-  "status": "healthy",
-  "service": "backend",
-  "message": "All backend services are operational"
+    "status": "healthy",
+    "timestamp": "2026-05-15T01:49:33.318781+00:00",
+    "service": "ai_agent",
+    "checks": {
+        "database": {
+            "status": "healthy",
+            "latency_ms": 358.73,
+            "type": "aurora-postgresql"
+        },
+        "redis": {
+            "status": "healthy",
+            "latency_ms": 339.75
+        },
+        "bedrock": {
+            "status": "healthy",
+            "latency_ms": 442.71,
+            "region": "us-east-1",
+            "available_models": 93
+        },
+        "bedrock_kb": {
+            "status": "healthy",
+            "latency_ms": 371.87,
+            "knowledge_base_id": "9OK4SPYXVP",
+            "kb_status": "ACTIVE"
+        },
+        "efs": {
+            "status": "healthy",
+            "latency_ms": 216.47,
+            "mount": "/mnt/efs"
+        },
+        "main_app": {
+            "status": "healthy",
+            "latency_ms": 280.01,
+            "app_status": "healthy"
+        },
+        "ecs_services": {
+            "status": "healthy",
+            "services": {
+                "webapp-group10-task-definition-service": {
+                    "status": "healthy",
+                    "running": 6,
+                    "desired": 6,
+                    "ecs_status": "ACTIVE"
+                }
+            }
+        }
+    }
 }
 ```
 
@@ -679,9 +723,8 @@ HTTP/1.1 200 OK
 
 ## Screenshot — Authenticated Request Success
 
-```markdown
-![Authenticated 200](./images/w5-mh4-test-200.png)
-```
+<img width="1113" height="703" alt="image" src="https://github.com/user-attachments/assets/9a5a2db5-a748-4087-b0a7-11b958b8da7e" />
+
 
 ### Mô tả screenshot cần capture
 
