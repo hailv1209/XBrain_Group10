@@ -169,113 +169,26 @@ Flow Logs giúp:
 **Path đã chọn:**
 - ☐ **Path A — AWS Network Firewall** (Stateful firewall + IPS signatures)
 - ☐ **Path B — Hardened SG + NACL** (Cô lập khỏi internet + negative test)
+- 
+a) Architecture Overview
+<img width="1530" height="783" alt="image" src="https://github.com/user-attachments/assets/319564c2-deb3-4a2a-a985-415de70fb903" />
 
-### Path A — AWS Network Firewall
+b) Firewall Subnet
+<img width="1564" height="487" alt="image" src="https://github.com/user-attachments/assets/b88a4396-c54b-4682-9113-8201112b8d8f" />
 
-#### Cấu hình Firewall
+b)Stateful Rule Group
+<img width="1655" height="396" alt="image" src="https://github.com/user-attachments/assets/9b14a8e2-6b3c-4d4a-9c4a-7f0a79ca6730" />
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Firewall ID** | fw-xxxxxxxxxxxxx |
-| **Firewall Subnet** | subnet-firewall (10.0.3.0/24) |
-| **Firewall Endpoint** | vpce-xxxxxxxxxxxxx |
-| **VPC** | vpc-app (10.0.0.0/16) |
-| **Status** | ✅ Ready |
+<img width="780" height="228" alt="image" src="https://github.com/user-attachments/assets/8f45afb7-45c3-452d-aee8-07a8f4b8d808" />
 
-**Diagram - Traffic Flow qua Network Firewall:**
+AWS Network Firewall đã phát hiện và chặn outbound traffic
+vi phạm firewall policy.
 
-```
-Internet Gateway (IGW)
-         ↓
-  [Firewall Subnet]
-  [Firewall Endpoint]
-         ↓
-   NAT Gateway
-         ↓
-[App Private Subnet]
-    [Lambda/EC2]
-```
+Security event được ghi nhận trong CloudWatch Logs
+với hành động "drop".
+<img width="1681" height="650" alt="image" src="https://github.com/user-attachments/assets/b1b03e52-9ee7-4ab3-b813-d3ed3926a5af" />
 
-#### Stateful Rule Group
-
-**Rule Group 1: Domain-based Egress Allowlist**
-
-```yaml
-Name: allow-bedrock-anthropic
-Type: STATEFUL_DOMAIN_LIST
-Rules:
-  - Action: ALLOW
-    Domain: "bedrock.us-east-1.amazonaws.com"
-    Description: "Allow Bedrock inference endpoints"
-  
-  - Action: ALLOW
-    Domain: "*.anthropic.com"
-    Description: "Allow Anthropic service domains"
-  
-  - Action: DROP
-    Domain: "*"
-    Description: "Drop all other outbound domains"
-```
-
-<img width="1604" height="740" alt="image" src="https://github.com/user-attachments/assets/22316abd-0cec-4b4b-832d-0f14eb2983a1" />
-
-
-**Screenshot - Firewall Rules:**
-![Firewall Rules](./images/w5-mh2-firewall-rules.png)
-
-#### Alert Logs
-
-**Blocked Request - Alert Log Entry:**
-
-```json
-{
-  "firewall_name": "web-app-firewall",
-  "action": "REJECT",
-  "source_ip": "10.0.1.25",
-  "destination_ip": "203.0.113.45",
-  "destination_port": 443,
-  "protocol": "TCP",
-  "domain": "malicious-domain.com",
-  "timestamp": "2026-05-15T10:23:45Z",
-  "rule_group": "allow-bedrock-anthropic"
-}
-```
-
-**Screenshot - Blocked Request trong Alert Logs:**
-<img width="975" height="504" alt="image" src="https://github.com/user-attachments/assets/5d707f84-e617-4209-9c2b-6dc38301c460" />
-
-
-**Allowed Request - Flow Log Entry:**
-
-```
-ACCEPT: 10.0.1.25 → bedrock.us-east-1.amazonaws.com:443 (TCP)
-Timestamp: 2026-05-15T10:24:10Z
-```
-
-**Screenshot - Allowed Request:**
-![Allowed Request](./images/w5-mh2-flow-logs-allowed.png)
-
----
-
-#### Negative Security Test
-
-**Test: Cố kết nối từ IP không được phép**
-
-```bash
-# Từ external IP (203.0.113.45) cố SSH tới instance private
-$ ssh -i key.pem ec2-user@10.0.1.25 -p 22
-
-Connection timeout after 30s
-(NACL DENY rule chặn)
-
-# Screenshot: Connection refused
-```
-
-**Screenshot - Negative Test Result:**
-<img width="975" height="175" alt="image" src="https://github.com/user-attachments/assets/e9dc9fcd-4af9-4b89-ada6-0dffd02a7d8b" />
-
-
----
+- Chứng minh firewall có inspect traffic thật.
 
 ## 4. MH3 — File Storage Layer + Backup Plan (Chia sẻ data, bảo vệ state)
 
