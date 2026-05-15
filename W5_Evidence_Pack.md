@@ -211,7 +211,7 @@ ECS/EC2
 ```
 
 ---
-<img width="1530" height="783" alt="image" src="https://github.com/user-attachments/assets/319564c2-deb3-4a2a-a985-415de70fb903" />
+<img width="1190" height="776" alt="image" src="https://github.com/user-attachments/assets/0d7b8bdf-0cfd-46e0-add9-ace13297d542" />
 
 # b) Firewall Subnet
 
