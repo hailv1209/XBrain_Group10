@@ -717,7 +717,7 @@ HTTP/1.1 200 OK
 
 ### Mô tả screenshot cần capture
 
-* Terminal hoặc Postman
+* Postman
 * Hiển thị:
 
   * curl command
@@ -735,7 +735,7 @@ Request không chứa API Key sẽ bị API Gateway từ chối.
 ### curl Test
 
 ```bash
-curl -X GET "https://<api-id>.execute-api.<region>.amazonaws.com/prod/health"
+curl -X GET "https://aws.hungtran.id.vn/health"
 ```
 
 ### Expected Response
@@ -752,13 +752,12 @@ HTTP/1.1 403 Forbidden
 
 ## Screenshot — Unauthenticated Request Blocked
 
-```markdown
-![Unauthenticated 403](./images/w5-mh4-test-403.png)
-```
+<img width="1264" height="570" alt="image" src="https://github.com/user-attachments/assets/b86378ff-5275-4bd4-9cc5-e2417597b65a" />
+
 
 ### Mô tả screenshot cần capture
 
-* Terminal hoặc Postman
+* Postman
 * Hiển thị:
 
   * curl command không có API Key
