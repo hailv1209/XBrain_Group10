@@ -22,34 +22,21 @@
 ### Kiến trúc hiện tại
 
 **Mô tả ngắn ứng dụng:**
-- **Tên ứng dụng:** [Nhập tên ứng dụng]
-- **Stack công nghệ:** [VD: Python/Node.js, RDS/DynamoDB, Lambda, Bedrock]
+- **Tên ứng dụng:** [Ứng dụng AI chatbot]
+- **Stack công nghệ:** [VD: Python/Node.js, RDS, Lambda, Bedrock]
 - **Dịch vụ AI được tích hợp:** Amazon Bedrock (Claude Sonnet 4-6, Claude Sonnet 4-5)
 - **Lớp lưu trữ file:** Amazon EFS (fs-0ed34a016c3fe7c67)
 - **Cơ sở dữ liệu:** RDS PostgreSQL (webapp-group10-database)
 - **Backup được quản lý bởi:** AWS Backup
 
-### Feedback từ tuần trước và cách W5 xử lý
-
-| Feedback W4 | Cách W5 xử lý | Bằng chứng |
-|-------------|---------------|----------|
-| [Nhập feedback cụ thể từ W4] | [Mô tả cách W5 giải quyết] | [Screenshot/Chi tiết] |
-| VD: Không có multi-AZ | W5 cập nhật subnet thành multi-AZ | [Screenshot subnet] |
-| VD: Backup plan chưa có | W5 tạo AWS Backup plan bao trùm EFS, RDS, EBS | [Screenshot backup plan] |
 
 ### Ứng dụng chạy end-to-end (Live Demo)
 
 **Action đại diện chứng minh app hoạt động:**
 
-```
-Lệnh kiểm tra:
-[Nhập lệnh curl hoặc test thực tế]
 
-Output:
-[Kết quả trả về]
-```
+<img width="1916" height="837" alt="image" src="https://github.com/user-attachments/assets/6ae9840f-8724-49f1-b7a4-c70a8da3c24a" />
 
-**Screenshot:** [Action end-to-end đang chạy trên deployment live]
 
 ---
 
@@ -1421,119 +1408,11 @@ Bedrock retrieval workflow vẫn hoạt động thành công thông qua Lambda i
   * Returned records/data
   * Successful response/result
 
-
 ---
 
-## 8. Negative Security Tests
+## 8. Bonus - Stretch Goals (Tuỳ chọn)
 
-### Test 1: Cross-VPC Unauthorized Access
-
-**Scenario:** Cố truy cập app tier từ unauthorized VPC
-
-**Test:**
-```bash
-# Từ VPC ngoài (không có peering connection)
-ssh -i key.pem ec2-user@10.0.1.100
-
-# Result: Connection timeout (NACL/SG chặn)
-```
-
-**Screenshot:**
-![Negative Test 1](./images/w5-negative-test1-unauthorized-access.png)
-
----
-
-### Test 2: API Gateway Throttle Violation
-
-**Scenario:** Vượt quá rate limit (100 req/sec)
-
-**Test:**
-```bash
-# Gửi 150 requests trong 1 giây
-for i in {1..150}; do
-  curl -X POST "https://abc123def.execute-api.us-east-1.amazonaws.com/prod/bedrock-query" \
-    -H "x-api-key: YOUR_API_KEY" \
-    -d '{"query":"test"}' &
-done
-wait
-
-# Result:
-# First 100: 200 OK
-# Next 50: 429 Too Many Requests (throttled)
-```
-
-**Screenshot:**
-![Negative Test 2](./images/w5-negative-test2-throttle-violation.png)
-
----
-
-### Test 3: Firewall Rule Violation (Path A)
-
-**Scenario:** Outbound traffic tới non-allowlist domain bị chặn
-
-**Test:**
-```bash
-# Từ instance trong app tier, cố kết nối tới domain không được phép
-curl https://random-external-domain.com
-
-# Result: Connection timeout (Network Firewall blocked)
-```
-
-**Alert Log Entry:**
-```json
-{
-  "action": "REJECT",
-  "source": "10.0.1.25",
-  "destination": "203.0.113.100",
-  "domain": "random-external-domain.com",
-  "rule_group": "allow-bedrock-anthropic",
-  "timestamp": "2026-05-15T15:45:00Z"
-}
-```
-
-**Screenshot:**
-![Negative Test 3](./images/w5-negative-test3-firewall-blocked.png)
-
----
-
-### Test 4: Lambda Reserved Concurrency Limit
-
-**Scenario:** Vượt quá reserved concurrency (50) → throttle
-
-```bash
-# Load test với 100 concurrent invocations
-ab -c 100 -n 100 https://lambda-endpoint
-
-# Result:
-# First 50: SUCCESS (202 Accepted)
-# Next 50: THROTTLED (429 TooManyRequests)
-```
-
-**Screenshot:**
-![Negative Test 4](./images/w5-negative-test4-lambda-throttle.png)
-
----
-
-### Test 5: EFS Mount Unauthorized Access
-
-**Scenario:** Security Group khác cố mount EFS
-
-**Test:**
-```bash
-# Từ EC2 trong security group không được allow
-sudo mount -t nfs4 fs-0ed34a016c3fe7c67.efs.us-east-1.amazonaws.com:/ /mnt/efs
-
-# Result: Connection timeout (SG chặn port 2049)
-```
-
-**Screenshot:**
-![Negative Test 5](./images/w5-negative-test5-efs-unauthorized.png)
-
----
-
-## 9. Bonus - Stretch Goals (Tuỳ chọn)
-
-### 9.1 VPC Reachability Analyzer
+### 8.1 VPC Reachability Analyzer
 AWS Reachability Analyzer was used to validate internet connectivity paths. The public subnet path was successfully reachable, while the private subnet path failed due to routing configuration restrictions.
     
   <img width="1920" height="510" alt="image" src="https://github.com/user-attachments/assets/d0610c9f-e4a0-41b5-a0b2-b142fad9432e" />
@@ -1550,7 +1429,7 @@ AWS Reachability Analyzer was used to validate internet connectivity paths. The 
 
 
 
-### 9.2 Lambda Power Tuning
+### 8.2 Lambda Power Tuning
 
 Nhóm triển khai AWS Lambda Power Tuning để benchmark Lambda function với nhiều mức memory khác nhau nhằm tìm cấu hình tối ưu giữa cost và performance.
 
