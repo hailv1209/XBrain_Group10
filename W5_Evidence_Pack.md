@@ -92,6 +92,7 @@ Dùng để triển khai cơ sở dữ liệu trong môi trường private:
   
 - Firewall Subnet
 Dùng cho AWS Network Firewall nhằm kiểm soát và giám sát traffic mạng.
+
 c) Route Tables
 Hệ thống sử dụng nhiều route table riêng biệt để quản lý traffic cho từng loại subnet:
 - Public Route Table
@@ -150,6 +151,7 @@ Chức năng:
 6. Flow logs
   
   a) VPC Flow Logs
+  
 Để giám sát và phân tích lưu lượng mạng trong hệ thống, VPC đã được cấu hình Flow Logs nhằm ghi nhận toàn bộ network traffic đi vào và đi ra khỏi VPC.
 Flow Logs giúp:
 - Theo dõi traffic giữa các subnet
