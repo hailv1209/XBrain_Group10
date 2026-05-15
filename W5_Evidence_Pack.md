@@ -460,21 +460,16 @@ cat /mnt/efs-restored/uploads/document.pdf.log
 
 ---
 
-## 5. MH4 — API Gateway trước Lambda (Xây surface API tử tế)
+## 5. MH4 — API Gateway trước Lambda (Xây dựng API Surface có Authentication và Throttling)
 
-### Lambda Function Hiện Tại
+### Tổng quan triển khai
 
-**Function được chọn cho MH4:**
+Trong MH4, nhóm đã triển khai API Gateway phía trước Lambda function hiện có nhằm xây dựng một API surface chuẩn hóa cho backend service. Trước khi triển khai MH4, Lambda được gọi trực tiếp từ application code thông qua AWS SDK, chưa có cơ chế authentication, throttling hoặc endpoint public an toàn cho frontend/backend integration.
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Function Name** | bedrock-query-handler |
-| **Runtime** | Python 3.11 |
-| **Handler** | lambda_function.lambda_handler |
-| **Memory** | 512 MB |
-| **Timeout** | 60 giây |
-| **VPC** | vpc-app (private subnet) |
-| **Mục đích** | Query Bedrock knowledge base với Anthropic Claude |
+Sau khi triển khai, luồng request được cập nhật như sau:
+
+```text
+CloudFront → API Gateway → Lambda Function
 
 **Current Invocation (trước MH4):**
 
