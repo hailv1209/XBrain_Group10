@@ -1,0 +1,25 @@
+# Copy this file to terraform.tfvars and fill in values
+
+project_name = "ai-agent"
+environment  = "production"
+aws_region   = "us-east-1"
+
+# ECS
+backend_cpu           = 256
+backend_memory        = 512
+backend_desired_count = 2
+worker_cpu            = 256
+worker_memory         = 512
+worker_desired_count  = 2
+
+# Database
+db_instance_class = "db.t3.micro"
+db_multi_az       = false
+db_name           = "ai_agent"
+
+# Cache
+redis_node_type = "cache.t3.micro"
+
+# Domain (optional - leave empty for CloudFront default domain)
+domain_name     = ""
+certificate_arn = ""

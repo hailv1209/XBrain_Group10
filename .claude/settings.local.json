@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"BACKEND_URL\\\\|fetch\\\\|axios\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(npx tsc *)",
+      "Bash(bunx --bun next lint)",
+      "Bash(python -c \"from app.core.cookies import set_auth_cookies, clear_auth_cookies; print\\('OK'\\)\")",
+      "Bash(bun run *)",
+      "Bash(xargs grep -l \"pydantic_ai\\\\|openai\")",
+      "Bash(uv run *)",
+      "Bash(uv sync *)",
+      "Bash(uv pip *)",
+      "Bash(rm -rf \"src/app/[locale]\")",
+      "Bash(rm -rf ../../messages)",
+      "Bash(bun install *)",
+      "Bash(npx next *)",
+      "Bash(xargs grep -l \"qdrant\\\\|Qdrant\")",
+      "Bash(xargs ls -la)",
+      "WebFetch(domain:mbx1d2xudd.execute-api.us-east-1.amazonaws.com)",
+      "WebFetch(domain:aws.hungtran.id.vn)",
+      "Bash(curl *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 *)",
+      "Bash(xargs grep -l \"rag\\\\|ingest\\\\|collection\")",
+      "Bash(xargs grep -l \"get_worker_db_context\")"
+    ]
+  }
+}
