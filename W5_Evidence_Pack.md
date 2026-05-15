@@ -157,6 +157,7 @@ Hệ thống sử dụng:
 <img width="1611" height="335" alt="image" src="https://github.com/user-attachments/assets/a3f5b7b2-6ffb-4e2d-b707-518255109516" />
 Chức năng:
     + Kết nối public subnet với Internet.
+      
 - NAT Gateway
     + webapp-group10-regional-nat
 <img width="1583" height="532" alt="image" src="https://github.com/user-attachments/assets/d64881f0-4fc4-41b3-ae88-3a7e0c4494eb" />
