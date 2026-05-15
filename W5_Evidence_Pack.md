@@ -196,8 +196,25 @@ Flow Logs giúp:
 - Phân tích network connectivity
 - Phát hiện traffic bất thường
 - Hỗ trợ troubleshooting và security monitoring 
-<img width="1602" height="544" alt="image" src="https://github.com/user-attachments/assets/d3c84c35-08d4-4763-aa84-63308779b17d" />
-<img width="1684" height="827" alt="image" src="https://github.com/user-attachments/assets/75c08aeb-bb27-446e-b91f-f035359a9066" />
+<img width="1633" height="249" alt="image" src="https://github.com/user-attachments/assets/5fc6ed81-87a6-4465-ba0d-2e7204777da0" />
+
+**Screenshot - VPC Flow Logs trong CloudWatch:**
+<img width="819" height="344" alt="image" src="https://github.com/user-attachments/assets/afc3adc9-119c-43a9-a882-52bece877e18" />
+
+**Sample Flow Log Entry:**
+```
+version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes 
+start end action log-status
+
+2 379353384462 eni-0123456789abcdef0 10.0.1.25 10.1.2.40 49158 3306 6 1 52 
+1620043391 1620043440 ACCEPT OK
+
+[Giải thích]
+- source: 10.0.1.25 (instance trong VPC A - app tier)
+- destination: 10.1.2.40 (RDS endpoint trong VPC B - database tier)
+- port 3306: MySQL traffic
+- ACCEPT: traffic được cho phép
+```
 
 
 ## 3. MH2 — Network Firewall Hardening (Ép buộc tại biên)
@@ -1334,136 +1351,68 @@ Kế hoạch production:
 
 ### Ứng dụng vẫn hoạt động end-to-end
 
-**Kiến trúc từ W1–W4 + W5 Hardening:**
+## Action 1 — Pipeline Execution
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Internet Users                       │
-└──────────────────┬──────────────────────────────────────┘
-                   │
-              ┌────▼─────┐
-              │  ALB/API  │ ← [MH4] API Gateway throttling auth
-              └────┬─────┘
-                   │
-    ┌──────────────┼──────────────┐
-    │              │              │
-┌───▼──┐    ┌─────▼─────┐  ┌────▼───┐
-│  EC2 │    │  Lambda   │  │   ECS  │
-│      │    │ (Bedrock) │  │        │
-└───┬──┘    └─────┬─────┘  └────┬───┘
-    │             │             │
-    │      ┌──────▼──────┐      │
-    │      │  RDS / DDB  │ ◄────┘
-    │      └──────┬──────┘
-    │             │
-    └─────┬───────┘
-          │
-    ┌─────▼──────────────┐
-    │  EFS Mount (MH3)   │ ← [MH3] Shared file storage
-    └────────────────────┘
+Hệ thống backend ECS vẫn hoạt động ổn định sau khi triển khai W5 hardening components.
 
-[MH1] VPC Connectivity: VPC Peering / TGW
-[MH2] Network Firewall: Stateful rules at ingress
-[MH5] Lambda: Reserved concurrency 50 on bedrock-query-handler
-```
+Cluster backend đang chạy nhiều ECS tasks đồng thời và service ở trạng thái healthy.
+
+### Screenshot — ECS Pipeline Execution
+
+<img width="1651" height="957" alt="image" src="https://github.com/user-attachments/assets/d07692e3-57cc-4ee9-8b57-e037094dacc9" />
+
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → ECS Cluster
+* Hiển thị:
+
+  * Cluster `webapp-group10-backend`
+  * Running tasks
+  * Service status = Active
+  * ECS tasks đang Running
 
 ---
 
-### Action 1: Bedrock Knowledge Base Query
+## Action 2 — Bedrock Retrieval
 
-**Flow:**
-```
-User Request → API Gateway (auth + throttle) → Lambda (bedrock-query-handler)
-→ Bedrock InvokeModel (Claude) → Knowledge Base (OpenSearch) → Response
-```
+Bedrock retrieval workflow vẫn hoạt động thành công thông qua Lambda integration và Knowledge Base retrieval flow.
 
-**Live Test:**
+### Screenshot — Bedrock Retrieval
 
-```bash
-# Gọi qua API Gateway (MH4)
-curl -X POST "https://abc123def.execute-api.us-east-1.amazonaws.com/prod/bedrock-query" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Describe the system architecture"}'
+<img width="1638" height="940" alt="image" src="https://github.com/user-attachments/assets/716df41c-576c-4201-ae19-97d1d745d9f3" />
 
-# Response (200 OK):
-{
-  "statusCode": 200,
-  "query": "Describe the system architecture",
-  "answer": "Based on the knowledge base, the system consists of...",
-  "model_used": "claude-sonnet-4-6",
-  "response_time_ms": 2341
-}
-```
 
-**Screenshot - Bedrock Query Live Test:**
-![Bedrock Query Test](./images/w5-action1-bedrock-query.png)
+**Mô tả screenshot cần capture:**
+
+* Bedrock Knowledge Base retrieval result
+* Hoặc Lambda invoke response
+* Hiển thị:
+
+  * Query request
+  * Retrieval result
+  * Successful response
 
 ---
 
-### Action 2: Database Lookup
+## Action 3 — Database Query
 
-**Flow:**
-```
-User Request → App → RDS Query → Response
-```
+Ứng dụng vẫn truy vấn database thành công sau khi triển khai các hardening components.
 
-**Live Test:**
+### Screenshot — Database Query
 
-```bash
-# Từ app tier instance
-curl http://localhost:8000/api/user/12345
+<img width="1663" height="952" alt="image" src="https://github.com/user-attachments/assets/65a27f90-f68b-4e71-b30b-0a60b6a9609a" />
 
-# Response:
-{
-  "user_id": 12345,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "created_at": "2026-05-01T10:30:00Z"
-}
-```
 
-**Screenshot - Database Lookup:**
-![Database Lookup](./images/w5-action2-db-lookup.png)
+**Mô tả screenshot cần capture:**
 
----
+* Application query result hoặc SQL client
+* Hiển thị:
 
-### Action 3: File Upload & Retrieve (EFS - MH3)
+  * Database query thành công
+  * Returned records/data
+  * Successful response/result
 
-**Flow:**
-```
-User uploads file → Lambda → Stored in EFS → Retrieval from EFS
-```
-
-**Live Test:**
-
-```bash
-# Upload file
-curl -X POST "http://api/upload" \
-  -F "file=@document.pdf" \
-  -H "Authorization: Bearer token"
-
-# Response:
-{
-  "file_id": "doc-2026-05-15-001",
-  "path": "/mnt/efs/uploads/doc-2026-05-15-001.pdf",
-  "size": 2048576,
-  "status": "stored"
-}
-
-# Retrieve file
-curl "http://api/files/doc-2026-05-15-001/content" \
-  -H "Authorization: Bearer token" \
-  --output document.pdf
-
-# Result: ✅ File downloaded successfully
-```
-
-**Screenshot - File Upload Test:**
-![File Upload](./images/w5-action3-file-upload.png)
-
-**Screenshot - File Retrieve Test:**
-![File Retrieve](./images/w5-action3-file-retrieve.png)
 
 ---
 
