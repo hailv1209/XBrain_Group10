@@ -53,11 +53,45 @@ Output:
 
 ---
 
-I) MH1 — Multi-VPC Connectivity
-Path C — Justified Single-VPC: 
+## 2. MH1 — Multi-VPC Connectivity
+
+### Connectivity Decision: Justified Single-VPC with Multi-AZ Enhancement
+
 1. Tổng quan kiến trúc VPC
 Hệ thống được triển khai trên một VPC duy nhất với tên webapp-group10-vpc, đóng vai trò là mạng nội bộ trung tâm cho toàn bộ hạ tầng ứng dụng trên AWS.
 Kiến trúc mạng được thiết kế theo mô hình phân tầng nhằm tách biệt các thành phần public, private, database và firewall để tăng cường bảo mật và khả năng quản lý traffic.
+
+**Justification cho Single-VPC:**
+1. **Đơn giản hóa kiến trúc:** Ứng dụng chatbot là single-tenant SaaS không cần network isolation cấp VPC. Tất cả components (web frontend, LLM backend, database, embedding store) thuộc về cùng một ứng dụng logic.
+
+2. **Cost-effective:** Single-VPC không cần Transit Gateway ($0.05/hour = $36/month) hay VPC peering management overhead. VPC charge vẫn flat rate $0.07/day cho single VPC.
+
+3. **Latency thấp:** Tất cả tầng chạy cùng VPC → không có inter-VPC latency. Quan trọng cho real-time chat response (target latency < 500ms từ user query tới bot answer).
+
+4. **Easy troubleshooting:** VPC Flow Logs từ một VPC duy nhất dễ analyze hơn. Khi user báo "chatbot slow", có thể trace flow trên một VPC thay vì phải check routing giữa nhiều VPC.
+
+5. **Không có compliance requirement:** Chatbot application không cần comply PCI-DSS (không xử lý payment cards), HIPAA (không xử lý health data), hay bất kỳ regulation nào đòi hỏi network isolation cấp VPC.
+
+**Multi-AZ Enhancement for High Availability:**
+Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a và us-east-1b):
+- **Public subnets:** 10.0.1.0/24 (AZ-a), 10.0.2.0/24 (AZ-b)
+  - ALB listeners trên cả 2 AZ
+  - NAT Gateway trên cả 2 AZ (redundancy)
+  
+- **Private app subnets:** 10.0.11.0/24 (AZ-a), 10.0.12.0/24 (AZ-b)
+  - EC2 instances deploy trên cả 2 AZ (Auto Scaling Group)
+  - Lambda functions invoke từ cả 2 AZ
+  - EFS mount targets trên cả 2 AZ
+  
+- **Private data subnets:** 10.0.21.0/24 (AZ-a), 10.0.22.0/24 (AZ-b)
+  - RDS Multi-AZ standby
+  - OpenSearch Serverless replicated (automatic)
+
+**Khi nào sẽ trigger Multi-VPC transition:**
+1. **Multi-region deployment:** Khi mở rộng sang Singapore, Tokyo, hoặc region khác → sẽ cần VPC riêng per region + Transit Gateway global hub
+2. **Separate staging/production:** Khi team scale và cần strict network isolation giữa prod (sensitive data) vs staging (test data) → sẽ tách thành VPC riêng
+3. **Third-party chatbot integration:** Khi integrate với partner APIs (Slack bot marketplace, Teams integration) → sẽ cần VPC peering với partner infrastructure
+4. **Compliance expansion:** Nếu sau này support healthcare/financial domain → HIPAA/PCI-DSS → sẽ cần dedicated VPC per compliance tier
 
 a) Thông tin VPC
 Tên VPC: webapp-group10-vpc
