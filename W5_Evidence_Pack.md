@@ -71,6 +71,7 @@ Hệ thống sử dụng tổng cộng 12 subnet, được phân bổ trên 3 Av
 - us-east-1a
 - us-east-1b
 - us-east-1c
+
 Mỗi AZ bao gồm:
 - Public Subnet
 Dùng cho các tài nguyên public-facing:
