@@ -460,9 +460,9 @@ cat /mnt/efs-restored/uploads/document.pdf.log
 
 ---
 
-# 5. MH4 — API Gateway trước Lambda (Xây dựng API Surface có Authentication và Throttling)
+## 5. MH4 — API Gateway trước Lambda (Xây dựng API Surface có Authentication và Throttling)
 
-## Tổng quan triển khai
+### Tổng quan triển khai
 
 Trong MH4, nhóm đã triển khai API Gateway phía trước Lambda function hiện có nhằm xây dựng một API surface chuẩn hóa cho backend service. Trước khi triển khai MH4, Lambda được gọi trực tiếp từ application code thông qua AWS SDK, chưa có cơ chế authentication, throttling hoặc endpoint public an toàn cho frontend/backend integration.
 
@@ -476,7 +476,7 @@ Lambda được sử dụng trong MH4 là function health check của hệ thố
 
 ---
 
-## Lambda Function được sử dụng
+### Lambda Function được sử dụng
 
 | Thông tin              | Chi tiết                                       |
 | ---------------------- | ---------------------------------------------- |
@@ -490,9 +490,9 @@ Function này được sử dụng để trả về trạng thái hoạt động
 
 ---
 
-# API Gateway Configuration
+### API Gateway Configuration
 
-## API Information
+#### API Information
 
 | Thông tin            | Chi tiết                 |
 | -------------------- | ------------------------ |
@@ -507,7 +507,7 @@ API Gateway được cấu hình làm public API layer phía trước Lambda fun
 
 ---
 
-## API Routes
+#### API Routes
 
 | Method | Endpoint        | Integration                                      |
 | ------ | --------------- | ------------------------------------------------ |
@@ -518,7 +518,7 @@ Cả hai endpoint đều được tích hợp thông qua Lambda Proxy Integratio
 
 ---
 
-## Request Flow
+#### Request Flow
 
 ```text
 Client
@@ -534,13 +534,11 @@ Backend Health Status Response
 
 ---
 
-## Screenshot — API Gateway Overview
+#### Screenshot — API Gateway Overview
 
-```markdown
-![API Gateway Overview](./images/w5-mh4-api-overview.png)
-```
+<img width="1592" height="688" alt="image" src="https://github.com/user-attachments/assets/4cba441e-f4a8-4f73-9faf-42e1859b4a1e" />
 
-### Mô tả screenshot cần capture
+##### Mô tả screenshot cần capture
 
 * AWS Console → API Gateway
 * Hiển thị tên API
