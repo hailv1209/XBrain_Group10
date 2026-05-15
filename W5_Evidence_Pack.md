@@ -186,28 +186,52 @@ Flow Logs giúp:
 
 ## 3. MH2 — Network Firewall Hardening (Ép buộc tại biên)
 
-### Lựa chọn Path
+## Lựa chọn Path
 
-**Path đã chọn:**
-- ☐ **Path A — AWS Network Firewall** (Stateful firewall + IPS signatures)
-- ☐ **Path B — Hardened SG + NACL** (Cô lập khỏi internet + negative test)
-- 
-a) Architecture Overview
+### Path đã chọn:
+☑ Path A — AWS Network Firewall (Stateful firewall + IPS signatures)
+
+Kiến trúc sử dụng AWS Network Firewall để kiểm tra và kiểm soát toàn bộ outbound traffic trước khi truy cập Internet thông qua NAT Gateway.
+
+---
+
+# a) Architecture Overview
+
+Kiến trúc triển khai AWS Network Firewall theo mô hình centralized traffic inspection.
+
+Toàn bộ outbound traffic từ private subnet được ép buộc đi qua AWS Network Firewall Endpoint trước khi tới NAT Gateway và Internet.
+## Traffic Flow
+
+```text
+ECS/EC2
+→ Firewall Endpoint
+→ AWS Network Firewall
+→ NAT Gateway
+→ Internet
+```
+
+---
 <img width="1530" height="783" alt="image" src="https://github.com/user-attachments/assets/319564c2-deb3-4a2a-a985-415de70fb903" />
 
-b) Firewall Subnet
+# b) Firewall Subnet
+
+Dedicated firewall subnet được triển khai riêng biệt trong từng Availability Zone để cô lập firewall traffic khỏi application workload.
+
+Firewall subnet đóng vai trò xử lý và kiểm tra traffic trước khi traffic rời khỏi VPC.
+
+---
 <img width="1564" height="487" alt="image" src="https://github.com/user-attachments/assets/b88a4396-c54b-4682-9113-8201112b8d8f" />
 
-b)Stateful Rule Group
+# c) Stateful Traffic Inspection
+
+AWS Network Firewall được cấu hình với Stateful Rule Groups để thực hiện deep packet inspection và phát hiện traffic bất thường.
+
 <img width="1655" height="396" alt="image" src="https://github.com/user-attachments/assets/9b14a8e2-6b3c-4d4a-9c4a-7f0a79ca6730" />
 
 <img width="780" height="228" alt="image" src="https://github.com/user-attachments/assets/8f45afb7-45c3-452d-aee8-07a8f4b8d808" />
+# d) Alert Logging & Monitoring
 
-AWS Network Firewall đã phát hiện và chặn outbound traffic
-vi phạm firewall policy.
-
-Security event được ghi nhận trong CloudWatch Logs
-với hành động "drop".
+Alert Logs được bật và gửi về Amazon CloudWatch Logs để phục vụ centralized monitoring, auditing và security investigation.
 <img width="1681" height="650" alt="image" src="https://github.com/user-attachments/assets/b1b03e52-9ee7-4ab3-b813-d3ed3926a5af" />
 
 - Chứng minh firewall có inspect traffic thật.
