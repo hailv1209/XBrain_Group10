@@ -40,7 +40,7 @@
 **Kiến trúc hệ thống trên cloud:**
 <img width="1015" height="866" alt="image" src="https://github.com/user-attachments/assets/51687d47-757b-495e-9f59-2ae93d5412e5" />
 
-***Link to diagram:***https://app.diagrams.net/#G1uAov8ZokNK1LBo_zqMDtdrT4d8BFUOMf#%7B%22pageId%22%3A%22_wFuGsi9mvh8PrvmbIV1%22%7D
+Link to diagram: https://app.diagrams.net/#G1uAov8ZokNK1LBo_zqMDtdrT4d8BFUOMf#%7B%22pageId%22%3A%22_wFuGsi9mvh8PrvmbIV1%22%7D
 
 ---
 
