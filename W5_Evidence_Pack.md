@@ -460,9 +460,9 @@ cat /mnt/efs-restored/uploads/document.pdf.log
 
 ---
 
-## 5. MH4 — API Gateway trước Lambda (Xây dựng API Surface có Authentication và Throttling)
+# 5. MH4 — API Gateway trước Lambda (Xây dựng API Surface có Authentication và Throttling)
 
-### Tổng quan triển khai
+## Tổng quan triển khai
 
 Trong MH4, nhóm đã triển khai API Gateway phía trước Lambda function hiện có nhằm xây dựng một API surface chuẩn hóa cho backend service. Trước khi triển khai MH4, Lambda được gọi trực tiếp từ application code thông qua AWS SDK, chưa có cơ chế authentication, throttling hoặc endpoint public an toàn cho frontend/backend integration.
 
@@ -470,182 +470,371 @@ Sau khi triển khai, luồng request được cập nhật như sau:
 
 ```text
 CloudFront → API Gateway → Lambda Function
+```
 
-**Current Invocation (trước MH4):**
+Lambda được sử dụng trong MH4 là function health check của hệ thống backend.
 
-```python
-# Trực tiếp gọi Lambda từ code app
-import boto3
-lambda_client = boto3.client('lambda')
+---
 
-response = lambda_client.invoke(
-    FunctionName='bedrock-query-handler',
-    InvocationType='RequestResponse',
-    Payload=json.dumps({'query': 'What is AI?'})
-)
+## Lambda Function được sử dụng
+
+| Thông tin              | Chi tiết                                       |
+| ---------------------- | ---------------------------------------------- |
+| **Function Name**      | webapp-group10-lambda-healthCheck              |
+| **Runtime**            | Python 3.11                                    |
+| **Handler**            | lambda_function.lambda_handler                 |
+| **Mục đích**           | Kiểm tra trạng thái backend services           |
+| **Invocation sau MH4** | Thông qua API Gateway Lambda Proxy Integration |
+
+Function này được sử dụng để trả về trạng thái hoạt động của các backend components và phục vụ monitoring endpoint cho hệ thống.
+
+---
+
+# API Gateway Configuration
+
+## API Information
+
+| Thông tin            | Chi tiết                 |
+| -------------------- | ------------------------ |
+| **API Type**         | REST API                 |
+| **Stage**            | prod                     |
+| **Integration Type** | Lambda Proxy Integration |
+| **Authentication**   | API Key                  |
+| **Throttling**       | Usage Plan               |
+| **CORS**             | Enabled                  |
+
+API Gateway được cấu hình làm public API layer phía trước Lambda function.
+
+---
+
+## API Routes
+
+| Method | Endpoint        | Integration                                      |
+| ------ | --------------- | ------------------------------------------------ |
+| GET    | `/health`       | Lambda Proxy → webapp-group10-lambda-healthCheck |
+| GET    | `/health-check` | Lambda Proxy → webapp-group10-lambda-healthCheck |
+
+Cả hai endpoint đều được tích hợp thông qua Lambda Proxy Integration.
+
+---
+
+## Request Flow
+
+```text
+Client
+   ↓
+CloudFront
+   ↓
+API Gateway
+   ↓
+Lambda Function
+   ↓
+Backend Health Status Response
 ```
 
 ---
 
-### API Gateway REST API
+## Screenshot — API Gateway Overview
 
-#### API Configuration
-
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **API Name** | bedrock-query-api |
-| **API Type** | REST API |
-| **API Endpoint** | https://abc123def.execute-api.us-east-1.amazonaws.com/prod |
-| **Stage** | prod |
-| **CORS** | ✅ Enabled |
-
-**Screenshot - API Gateway Created:**
-![API Gateway Created](./images/w5-mh4-api-gateway.png)
-
-#### Resource & Method
-
-```
-/bedrock-query  [POST]
-  ├── Request
-  │   ├── Authentication: API Key
-  │   └── Payload: { "query": "string" }
-  └── Integration
-      ├── Type: Lambda Function
-      ├── Lambda Function: bedrock-query-handler
-      └── Proxy Integration: ✅ Enabled
+```markdown
+![API Gateway Overview](./images/w5-mh4-api-overview.png)
 ```
 
-**Screenshot - Resource Tree:**
-![Resource Tree](./images/w5-mh4-resource-tree.png)
+### Mô tả screenshot cần capture
 
-#### Throttling Configuration
+* AWS Console → API Gateway
+* Hiển thị tên API
+* Hiển thị stage `prod`
+* Hiển thị các routes:
 
-**Usage Plan:**
-
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Plan Name** | bedrock-query-usage-plan |
-| **Rate Limit** | 100 requests/second |
-| **Burst Limit** | 200 requests/second |
-| **Quota** | 10,000 requests/day |
-
-**API Key:**
-
-```
-API Key ID: xxxxxxxxxxxxx
-API Key Value: xxxxxxxxxxxxxxxxxxx (to be rotated regularly)
-Associated Usage Plan: bedrock-query-usage-plan
-Status: ✅ Active
-```
-
-**Screenshot - Throttling Configuration:**
-![Throttling Config](./images/w5-mh4-throttling.png)
+  * `/health`
+  * `/health-check`
 
 ---
 
-#### Authentication - API Key
+# Lambda Proxy Integration
 
-**AWS API Gateway API Key:**
+API Gateway được cấu hình sử dụng Lambda Proxy Integration để chuyển toàn bộ request context trực tiếp xuống Lambda function.
+
+## Integration Configuration
+
+| Thông tin             | Chi tiết                          |
+| --------------------- | --------------------------------- |
+| **Integration Type**  | Lambda Function                   |
+| **Proxy Integration** | Enabled                           |
+| **Target Lambda**     | webapp-group10-lambda-healthCheck |
+
+---
+
+## Screenshot — Lambda Proxy Integration
+
+```markdown
+![Lambda Proxy Integration](./images/w5-mh4-lambda-proxy.png)
+```
+
+### Mô tả screenshot cần capture
+
+* API Gateway → Route `/health`
+* Tab Integration Request
+* Hiển thị:
+
+  * Lambda Function integration
+  * Lambda Proxy Integration = Enabled
+  * Target Lambda = `webapp-group10-lambda-healthCheck`
+
+---
+
+# Authentication Configuration — API Key
+
+Để bảo vệ API endpoint, nhóm đã cấu hình API Key Authentication trên API Gateway.
+
+Chỉ các request chứa API Key hợp lệ mới có thể truy cập endpoint.
+
+## Authentication Method
+
+| Thông tin            | Chi tiết |
+| -------------------- | -------- |
+| **Auth Type**        | API Key  |
+| **API Key Required** | Enabled  |
+| **Stage Protected**  | prod     |
+
+---
+
+## Screenshot — API Key Configuration
+
+```markdown
+![API Key Configuration](./images/w5-mh4-api-key.png)
+```
+
+### Mô tả screenshot cần capture
+
+* API Gateway → Method Request
+* Hiển thị:
+
+  * API Key Required = true
+
+Hoặc:
+
+* API Gateway → Usage Plans
+* Hiển thị API Key đã associate với stage
+
+---
+
+# Throttling Configuration (Usage Plan)
+
+Nhóm đã triển khai Usage Plan để giới hạn request rate và burst capacity nhằm tránh abuse và overload backend Lambda function.
+
+## Usage Plan
+
+| Thông tin           | Chi tiết                  |
+| ------------------- | ------------------------- |
+| **Usage Plan Name** | webapp-group10-usage-plan |
+| **Rate Limit**      | 100 requests/second       |
+| **Burst Limit**     | 200 requests              |
+| **Quota**           | 10,000 requests/day       |
+
+---
+
+## Screenshot — Usage Plan & Throttling
+
+```markdown
+![Usage Plan](./images/w5-mh4-throttling.png)
+```
+
+### Mô tả screenshot cần capture
+
+* API Gateway → Usage Plans
+* Hiển thị:
+
+  * Rate limit
+  * Burst limit
+  * Quota
+  * Associated stage/API
+
+---
+
+# Evidence Pack — API Authentication Testing
+
+## Test 1 — Authenticated Request (HTTP 200)
+
+Request có chứa API Key hợp lệ sẽ truy cập thành công API Gateway endpoint.
+
+### curl Test
 
 ```bash
-# Test 1: WITH valid API Key (Status 200)
-curl -X POST "https://abc123def.execute-api.us-east-1.amazonaws.com/prod/bedrock-query" \
-  -H "x-api-key: xxxxxxxxxxxxxxxxxxx" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What is machine learning?"}'
+curl -X GET "https://<api-id>.execute-api.<region>.amazonaws.com/prod/health" \
+  -H "x-api-key: <valid-api-key>"
+```
 
-# Response:
+### Expected Response
+
+```json
 HTTP/1.1 200 OK
-Content-Type: application/json
 
 {
-  "statusCode": 200,
-  "body": {
-    "answer": "Machine learning is a type of artificial intelligence...",
-    "model": "claude-sonnet-4-6",
-    "tokens_used": 145
-  }
+  "status": "healthy",
+  "service": "backend",
+  "message": "All backend services are operational"
 }
 ```
 
-**Screenshot - Test 200 (Authenticated):**
-![Test 200 Authenticated](./images/w5-mh4-test-200.png)
+---
+
+## Screenshot — Authenticated Request Success
+
+```markdown
+![Authenticated 200](./images/w5-mh4-test-200.png)
+```
+
+### Mô tả screenshot cần capture
+
+* Terminal hoặc Postman
+* Hiển thị:
+
+  * curl command
+  * HTTP/1.1 200 OK
+  * JSON response body
+
+---
+
+# Evidence Pack — Unauthorized Testing
+
+## Test 2 — Unauthenticated Request (HTTP 403)
+
+Request không chứa API Key sẽ bị API Gateway từ chối.
+
+### curl Test
 
 ```bash
-# Test 2: WITHOUT API Key (Status 403)
-curl -X POST "https://abc123def.execute-api.us-east-1.amazonaws.com/prod/bedrock-query" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What is machine learning?"}'
+curl -X GET "https://<api-id>.execute-api.<region>.amazonaws.com/prod/health"
+```
 
-# Response:
+### Expected Response
+
+```json
 HTTP/1.1 403 Forbidden
-Content-Type: application/json
 
 {
   "message": "Forbidden"
 }
 ```
 
-**Screenshot - Test 403 (Unauthenticated):**
-![Test 403 Unauthenticated](./images/w5-mh4-test-403.png)
+---
+
+## Screenshot — Unauthenticated Request Blocked
+
+```markdown
+![Unauthenticated 403](./images/w5-mh4-test-403.png)
+```
+
+### Mô tả screenshot cần capture
+
+* Terminal hoặc Postman
+* Hiển thị:
+
+  * curl command không có API Key
+  * HTTP/1.1 403 Forbidden
+  * Response body `"Forbidden"`
 
 ---
 
-### Updated Application Code
+# Application Code Update
 
-**Code trước (Direct Lambda Invocation):**
+Trước MH4, application gọi Lambda trực tiếp bằng AWS SDK invocation.
+
+Sau MH4, application được cập nhật để gọi API Gateway endpoint thay vì invoke Lambda trực tiếp.
+
+---
+
+## Code trước MH4 — Direct Lambda Invocation
 
 ```python
-# app.py - OLD
+# OLD IMPLEMENTATION
+
 import boto3
 import json
 
 lambda_client = boto3.client('lambda')
 
-def query_bedrock(user_query):
+def check_backend_health():
     response = lambda_client.invoke(
-        FunctionName='bedrock-query-handler',
-        InvocationType='RequestResponse',
-        Payload=json.dumps({'query': user_query})
+        FunctionName='webapp-group10-lambda-healthCheck',
+        InvocationType='RequestResponse'
     )
+
     return json.loads(response['Payload'].read())
 ```
 
-**Code sau (API Gateway):**
+---
+
+## Code sau MH4 — API Gateway Invocation
 
 ```python
-# app.py - NEW
+# NEW IMPLEMENTATION
+
 import requests
-import json
 import os
 
-API_ENDPOINT = os.environ['BEDROCK_API_ENDPOINT']  # https://abc123def.execute-api.us-east-1.amazonaws.com/prod
-API_KEY = os.environ['BEDROCK_API_KEY']
+API_ENDPOINT = os.environ['HEALTH_API_ENDPOINT']
+API_KEY = os.environ['HEALTH_API_KEY']
 
-def query_bedrock(user_query):
-    headers = {
-        'x-api-key': API_KEY,
-        'Content-Type': 'application/json'
-    }
-    payload = {'query': user_query}
-    
-    response = requests.post(
-        f"{API_ENDPOINT}/bedrock-query",
-        headers=headers,
-        json=payload,
-        timeout=60
+def check_backend_health():
+    response = requests.get(
+        f"{API_ENDPOINT}/health",
+        headers={
+            "x-api-key": API_KEY
+        },
+        timeout=30
     )
-    
+
     if response.status_code == 200:
         return response.json()
-    else:
-        raise Exception(f"API Error: {response.status_code}")
+
+    raise Exception(
+        f"API Gateway Error: {response.status_code}"
+    )
 ```
 
-**Screenshot - Updated Code in Repository:**
-![Updated Code](./images/w5-mh4-updated-code.png)
+---
+
+## Screenshot — Updated Application Code
+
+```markdown
+![Updated Application Code](./images/w5-mh4-updated-code.png)
+```
+
+### Mô tả screenshot cần capture
+
+* Repository source code hoặc IDE
+* Hiển thị:
+
+  * Request gọi API Gateway URL
+  * Header `x-api-key`
+  * Không còn `lambda_client.invoke(...)`
 
 ---
+
+# Kết quả đạt được sau MH4
+
+Sau khi triển khai MH4:
+
+* Lambda function không còn được invoke trực tiếp từ application
+* API Gateway trở thành API surface chính thức cho backend
+* Endpoint được bảo vệ bằng API Key authentication
+* Đã cấu hình throttling với usage plan
+* Request hợp lệ trả về HTTP 200
+* Request không có authentication bị từ chối với HTTP 403
+* Ứng dụng đã cập nhật hoàn toàn sang API Gateway endpoint thay vì direct Lambda invocation
+
+Implementation này đáp ứng đầy đủ yêu cầu của MH4 về:
+
+* API Gateway integration
+* Lambda Proxy Integration
+* Authentication
+* Throttling
+* Evidence Pack cho authenticated và unauthenticated request
+* Application code migration khỏi direct Lambda invocation
+
 
 ## 6. MH5 — Serverless Scaling Pattern (Xử lý tải đúng cách)
 
