@@ -596,9 +596,8 @@ Chỉ các request chứa API Key hợp lệ mới có thể truy cập endpoint
 
 ## Screenshot — API Key Configuration
 
-```markdown
-![API Key Configuration](./images/w5-mh4-api-key.png)
-```
+<img width="650" height="158" alt="image" src="https://github.com/user-attachments/assets/720547d7-12f8-4e05-92f3-57c9035dcd20" />
+
 
 ### Mô tả screenshot cần capture
 
@@ -609,7 +608,8 @@ Chỉ các request chứa API Key hợp lệ mới có thể truy cập endpoint
 
 Hoặc:
 
-* API Gateway → Usage Plans
+<img width="1625" height="286" alt="image" src="https://github.com/user-attachments/assets/ec98acb1-d05c-483c-8f24-5672d44c7f99" />
+
 * Hiển thị API Key đã associate với stage
 
 ---
@@ -773,104 +773,6 @@ HTTP/1.1 403 Forbidden
   * Response body `"Forbidden"`
 
 ---
-
-# Application Code Update
-
-Trước MH4, application gọi Lambda trực tiếp bằng AWS SDK invocation.
-
-Sau MH4, application được cập nhật để gọi API Gateway endpoint thay vì invoke Lambda trực tiếp.
-
----
-
-## Code trước MH4 — Direct Lambda Invocation
-
-```python
-# OLD IMPLEMENTATION
-
-import boto3
-import json
-
-lambda_client = boto3.client('lambda')
-
-def check_backend_health():
-    response = lambda_client.invoke(
-        FunctionName='webapp-group10-lambda-healthCheck',
-        InvocationType='RequestResponse'
-    )
-
-    return json.loads(response['Payload'].read())
-```
-
----
-
-## Code sau MH4 — API Gateway Invocation
-
-```python
-# NEW IMPLEMENTATION
-
-import requests
-import os
-
-API_ENDPOINT = os.environ['HEALTH_API_ENDPOINT']
-API_KEY = os.environ['HEALTH_API_KEY']
-
-def check_backend_health():
-    response = requests.get(
-        f"{API_ENDPOINT}/health",
-        headers={
-            "x-api-key": API_KEY
-        },
-        timeout=30
-    )
-
-    if response.status_code == 200:
-        return response.json()
-
-    raise Exception(
-        f"API Gateway Error: {response.status_code}"
-    )
-```
-
----
-
-## Screenshot — Updated Application Code
-
-```markdown
-![Updated Application Code](./images/w5-mh4-updated-code.png)
-```
-
-### Mô tả screenshot cần capture
-
-* Repository source code hoặc IDE
-* Hiển thị:
-
-  * Request gọi API Gateway URL
-  * Header `x-api-key`
-  * Không còn `lambda_client.invoke(...)`
-
----
-
-# Kết quả đạt được sau MH4
-
-Sau khi triển khai MH4:
-
-* Lambda function không còn được invoke trực tiếp từ application
-* API Gateway trở thành API surface chính thức cho backend
-* Endpoint được bảo vệ bằng API Key authentication
-* Đã cấu hình throttling với usage plan
-* Request hợp lệ trả về HTTP 200
-* Request không có authentication bị từ chối với HTTP 403
-* Ứng dụng đã cập nhật hoàn toàn sang API Gateway endpoint thay vì direct Lambda invocation
-
-Implementation này đáp ứng đầy đủ yêu cầu của MH4 về:
-
-* API Gateway integration
-* Lambda Proxy Integration
-* Authentication
-* Throttling
-* Evidence Pack cho authenticated và unauthenticated request
-* Application code migration khỏi direct Lambda invocation
-
 
 ## 6. MH5 — Serverless Scaling Pattern (Xử lý tải đúng cách)
 
