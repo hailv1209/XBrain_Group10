@@ -566,9 +566,8 @@ API Gateway được cấu hình sử dụng Lambda Proxy Integration để chuy
 
 ## Screenshot — Lambda Proxy Integration
 
-```markdown
-![Lambda Proxy Integration](./images/w5-mh4-lambda-proxy.png)
-```
+<img width="1285" height="605" alt="image" src="https://github.com/user-attachments/assets/1d745e0e-67d6-46af-acf2-0dc9290c5190" />
+
 
 ### Mô tả screenshot cần capture
 
