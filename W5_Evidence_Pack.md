@@ -311,108 +311,368 @@ cat /mnt/efs/uploads/document.pdf.log
 
 ---
 
-### Backup Plan
+## Backup Plan và Restore Verification
 
-#### AWS Backup Plan
+### Tổng quan triển khai
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Backup Plan ID** | fb247858-2f16-4297-ab40-d68aee9edb12 |
-| **Plan Name** | webapp-group10-backup-plan |
-| **Status** | ✅ Active |
-| **Schedule** | Daily at 02:00 UTC |
-| **Retention** | 7 days minimum |
-| **Vault** | webapp-group10-backup-vault |
+Trong phần này, nhóm triển khai AWS Backup để tự động backup các tài nguyên quan trọng của hệ thống nhằm đáp ứng yêu cầu disaster recovery và data protection.
 
-#### Resources được Backup
+Backup strategy bao gồm:
 
-| Resource Type | Resource ARN | W (trước đó) | Status |
-|---------------|-------------|------------|--------|
-| **EFS** (MH3 mới) | arn:aws:elasticfilesystem:us-east-1:379353384462:file-system/fs-0ed34a016c3fe7c67 | - | ✅ Included |
-| **RDS** (W3) | arn:aws:rds:us-east-1:379353384462:db:webapp-group10-database | W3 | ✅ Included |
-| **EBS** (W2) | arn:aws:ec2:us-east-1:379353384462:volume/* | W2 | ✅ Included |
-
-**Backup Rule Configuration:**
-
-```yaml
-BackupPlan: webapp-group10-backup-plan
-Rules:
-  - RuleName: daily-backup
-    TargetBackupVault: webapp-group10-backup-vault
-    ScheduleExpression: "cron(0 2 * * ? *)"  # 02:00 UTC mỗi ngày
-    RecoveryPointTags:
-      Environment: "production"
-      Week: "W5"
-    Lifecycle:
-      MoveToColdStorageAfterDays: 30
-      DeleteAfterDays: 35
-```
-
-**Screenshot - Backup Plan:**
-![Backup Plan](./images/w5-mh3-backup-plan.png)
-
-#### Recovery Points
-
-| Recovery Point ID | Resource | Completion Time | Status | Size |
-|------------------|----------|-----------------|--------|------|
-| rp-efs-20260515 | EFS fs-0ed34a016c3fe7c67 | 2026-05-15 02:15 UTC | ✅ COMPLETED | 2.3 GB |
-| rp-rds-20260515 | RDS webapp-group10-database | 2026-05-15 02:45 UTC | ✅ COMPLETED | 15.7 GB |
-| rp-ebs-20260515 | EBS vol-xxxxx | 2026-05-15 02:30 UTC | ✅ COMPLETED | 50 GB |
-
-**Screenshot - Recovery Points:**
-![Recovery Points](./images/w5-mh3-recovery-points.png)
+* AWS Backup Plan tự động chạy theo lịch
+* Backup nhiều resource production
+* Lưu recovery point trong Backup Vault
+* Kiểm tra restore thực tế từ recovery point
+* Xác minh dữ liệu sau restore thành công
 
 ---
 
-### Restore Test (BẮTBUỘC)
+### AWS Backup Plan
 
-#### Restore Job Configuration
+#### Backup Plan Information
 
-**Restore EFS từ Recovery Point:**
+| Thông tin            | Chi tiết               |
+| -------------------- | ---------------------- |
+| **Backup Plan Name** | webapp-group10-backup  |
+| **Backup Vault**     | webapp-group10-vault   |
+| **Status**           | ✅ Active               |
+| **Created Time**     | May 14, 2026           |
+| **Schedule**         | Daily Automatic Backup |
+| **Backup Service**   | AWS Backup             |
 
+Ngoài backup plan chính do nhóm cấu hình, hệ thống còn có automatic backup plan mặc định cho Amazon EFS.
+
+---
+
+#### Existing Backup Plans
+
+| Backup Plan                       | Type                   | Status   |
+| --------------------------------- | ---------------------- | -------- |
+| **webapp-group10-backup**         | Custom Backup Plan     | ✅ Active |
+| **aws/efs/automatic-backup-plan** | AWS Managed EFS Backup | ✅ Active |
+
+---
+
+#### Screenshot — Backup Plans
+
+```markdown
+![Backup Plans](./images/w5-backup-plans.png)
 ```
-Source Recovery Point: rp-efs-20260515
-Destination: New EFS file system
-Subnet: subnet-app-2 (Multi-AZ test)
-Performance Mode: General Purpose
-Encryption: Enabled
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → AWS Backup → Backup Plans
+* Hiển thị:
+
+  * `webapp-group10-backup`
+  * `aws/efs/automatic-backup-plan`
+* Hiển thị trạng thái active
+* Hiển thị created time
+
+---
+
+### Backup Vault Configuration
+
+#### Backup Vault
+
+| Thông tin      | Chi tiết               |
+| -------------- | ---------------------- |
+| **Vault Name** | webapp-group10-vault   |
+| **Vault Type** | Customer Managed Vault |
+| **Status**     | ✅ Available            |
+
+Backup vault được sử dụng để lưu trữ recovery points của toàn bộ hệ thống.
+
+---
+
+#### Screenshot — Backup Vault
+
+```markdown
+![Backup Vault](./images/w5-backup-vault.png)
 ```
 
-**Restore Job Details:**
+**Mô tả screenshot cần capture:**
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Job ID** | arn:aws:backup:us-east-1:379353384462:recovery-point:rp-efs-restore-20260515 |
-| **Start Time** | 2026-05-15 14:30 UTC |
-| **Completion Time** | 2026-05-15 14:47 UTC |
-| **Duration** | 17 phút |
-| **Status** | ✅ COMPLETED |
+* AWS Console → AWS Backup → Backup Vaults
+* Hiển thị:
 
-**Screenshot - Restore Job Completed:**
-![Restore Job Completed](./images/w5-mh3-restore-completed.png)
+  * `webapp-group10-vault`
+  * Number of recovery points
+  * Vault status
 
-#### Data Verification từ Restored Resource
+---
 
-**Mount Restored EFS:**
+### Resource Assignment
+
+AWS Backup được cấu hình để backup nhiều tài nguyên production quan trọng của hệ thống.
+
+#### Resource Assignment Information
+
+| Thông tin                    | Chi tiết                        |
+| ---------------------------- | ------------------------------- |
+| **Resource Assignment Name** | webapp-group10-backup-resources |
+| **IAM Role**                 | AWSBackupDefaultServiceRole     |
+| **Assignment Method**        | ARN-based selection             |
+
+---
+
+#### Resources được Backup
+
+| Resource Type | Resource ARN                                                                      | Status     |
+| ------------- | --------------------------------------------------------------------------------- | ---------- |
+| **EFS**       | arn:aws:elasticfilesystem:us-east-1:379353384462:file-system/fs-0ed34a016c3fe7c67 | ✅ Included |
+| **RDS**       | arn:aws:rds:us-east-1:379353384462:db:webapp-group10-database                     | ✅ Included |
+| **S3**        | arn:aws:s3:::webapp-group10-app-bucket                                            | ✅ Included |
+| **S3**        | arn:aws:s3:::webapp-group10-backend-env                                           | ✅ Included |
+| **S3**        | arn:aws:s3:::webapp-group10-frontend-bucket                                       | ✅ Included |
+| **S3**        | arn:aws:s3:::webapp-group10-kb-source                                             | ✅ Included |
+| **S3**        | arn:aws:s3:::webapp-group10-multimedia-kb                                         | ✅ Included |
+
+---
+
+#### Screenshot — Resource Assignment
+
+```markdown
+![Backup Resource Assignment](./images/w5-backup-resource-assignment.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → AWS Backup → Protected Resources hoặc Resource Assignments
+* Hiển thị:
+
+  * Resource assignment name
+  * IAM Role
+  * Danh sách resource ARN
+  * EFS, RDS, S3 buckets
+
+---
+
+### Backup Rule Configuration
+
+#### Backup Rule
+
+```yaml
+BackupPlan: webapp-group10-backup
+
+Rules:
+  - RuleName: daily-backup
+    TargetBackupVault: webapp-group10-vault
+
+    ScheduleExpression: "cron(0 2 * * ? *)"
+
+    Lifecycle:
+      MoveToColdStorageAfterDays: 30
+      DeleteAfterDays: 35
+
+    RecoveryPointTags:
+      Environment: production
+      Week: W5
+```
+
+---
+
+#### Backup Policy Summary
+
+| Configuration               | Value     |
+| --------------------------- | --------- |
+| **Backup Frequency**        | Daily     |
+| **Backup Time**             | 02:00 UTC |
+| **Cold Storage Transition** | 30 days   |
+| **Deletion Policy**         | 35 days   |
+
+---
+
+#### Screenshot — Backup Rule Configuration
+
+```markdown
+![Backup Rule Configuration](./images/w5-backup-rule.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → AWS Backup → Backup Plan → Rules
+* Hiển thị:
+
+  * Schedule expression
+  * Backup frequency
+  * Lifecycle policy
+  * Target vault
+
+---
+
+### Recovery Points
+
+Sau khi backup job hoàn thành, AWS Backup tạo recovery points để phục vụ restore khi cần thiết.
+
+#### Recovery Points Information
+
+| Recovery Point         | Resource Type | Status      |
+| ---------------------- | ------------- | ----------- |
+| **EFS Recovery Point** | Amazon EFS    | ✅ COMPLETED |
+| **RDS Recovery Point** | Amazon RDS    | ✅ COMPLETED |
+| **S3 Recovery Point**  | Amazon S3     | ✅ COMPLETED |
+
+Recovery points được lưu trữ trong `webapp-group10-vault`.
+
+---
+
+#### Screenshot — Recovery Points
+
+```markdown
+![Recovery Points](./images/w5-recovery-points.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → AWS Backup → Recovery Points
+* Hiển thị:
+
+  * Recovery point IDs
+  * Resource type
+  * Creation time
+  * Status = COMPLETED
+  * Backup vault name
+
+---
+
+### Restore Test (Bắt buộc)
+
+Nhóm đã thực hiện restore test từ recovery point để xác minh backup có thể sử dụng thực tế trong disaster recovery scenario.
+
+---
+
+### Restore Job Configuration
+
+#### Restore Target
+
+| Thông tin           | Chi tiết                |
+| ------------------- | ----------------------- |
+| **Source Resource** | Amazon EFS              |
+| **Restore Type**    | Restore to New Resource |
+| **Destination**     | New EFS File System     |
+| **Encryption**      | Enabled                 |
+| **Restore Status**  | ✅ COMPLETED             |
+
+Restore test được thực hiện bằng cách khôi phục EFS từ recovery point sang file system mới.
+
+---
+
+#### Screenshot — Restore Job Started
+
+```markdown
+![Restore Job Started](./images/w5-restore-job-started.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → AWS Backup → Restore Jobs
+* Hiển thị:
+
+  * Restore job details
+  * Source recovery point
+  * Destination resource
+  * Status
+
+---
+
+### Restore Job Result
+
+#### Restore Job Details
+
+| Thông tin              | Chi tiết    |
+| ---------------------- | ----------- |
+| **Restore Job Status** | ✅ COMPLETED |
+| **Restore Type**       | EFS Restore |
+| **Verification**       | Success     |
+| **Data Validation**    | Passed      |
+
+---
+
+#### Screenshot — Restore Job Completed
+
+```markdown
+![Restore Job Completed](./images/w5-restore-completed.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → AWS Backup → Restore Jobs
+* Hiển thị:
+
+  * Status = COMPLETED
+  * Completion time
+  * Restored resource information
+
+---
+
+### Data Verification sau Restore
+
+Sau khi restore hoàn tất, nhóm mount restored EFS để xác minh dữ liệu đã được khôi phục chính xác.
+
+#### Mount Restored EFS
 
 ```bash
-# Mount restored file system
-sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
-  fs-restored-xxxxx.efs.us-east-1.amazonaws.com:/ /mnt/efs-restored
-
-# Verify data từ backup được khôi phục
-cat /mnt/efs-restored/sessions/user-1.token
-# Output: session_token_abc123def456  ✅ Data khôi phục thành công
-
-cat /mnt/efs-restored/uploads/document.pdf.log
-# Output: [2026-05-15] User uploaded document.pdf  ✅
+sudo mount -t nfs4 \
+  -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
+  fs-restored-xxxxx.efs.us-east-1.amazonaws.com:/ \
+  /mnt/efs-restored
 ```
 
-**Screenshot - Data Verification Sau Restore:**
-![Restore Data Verification](./images/w5-mh3-restore-data-verify.png)
+---
 
-**Screenshot - Data Comparison (Trước vs Sau):**
-![Data Comparison](./images/w5-mh3-data-before-after.png)
+#### Verify Restored Data
+
+```bash
+cat /mnt/efs-restored/sessions/user-1.token
+
+# Expected:
+session_token_abc123def456
+```
+
+```bash
+cat /mnt/efs-restored/uploads/document.pdf.log
+
+# Expected:
+[2026-05-15] User uploaded document.pdf
+```
+
+Dữ liệu sau restore khớp với dữ liệu production trước backup, xác nhận restore thành công.
+
+---
+
+#### Screenshot — Restored Data Verification
+
+```markdown
+![Restore Data Verification](./images/w5-restore-data-verification.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* Terminal session
+* Hiển thị:
+
+  * Mount command
+  * cat file commands
+  * Nội dung file restored
+  * Successful output
+
+---
+
+#### Screenshot — Data Comparison Before vs After Restore
+
+```markdown
+![Data Comparison](./images/w5-data-before-after.png)
+```
+
+**Mô tả screenshot cần capture:**
+
+* So sánh dữ liệu:
+
+  * Resource gốc
+  * Resource restored
+* Nội dung file giống nhau
+* Có thể dùng split terminal hoặc 2 cửa sổ
 
 ---
 
