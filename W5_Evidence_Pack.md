@@ -487,9 +487,7 @@ Recovery points được lưu trữ trong `webapp-group10-vault`.
 
 #### Screenshot — Recovery Points
 
-```markdown
-![Recovery Points](./images/w5-recovery-points.png)
-```
+<img width="1603" height="523" alt="image" src="https://github.com/user-attachments/assets/73d5acfa-7de9-479b-86f5-20b28bb968ae" />
 
 **Mô tả screenshot cần capture:**
 
@@ -524,26 +522,6 @@ Nhóm đã thực hiện restore test từ recovery point để xác minh backup
 
 Restore test được thực hiện bằng cách khôi phục EFS từ recovery point sang file system mới.
 
----
-
-#### Screenshot — Restore Job Started
-
-```markdown
-![Restore Job Started](./images/w5-restore-job-started.png)
-```
-
-**Mô tả screenshot cần capture:**
-
-* AWS Console → AWS Backup → Restore Jobs
-* Hiển thị:
-
-  * Restore job details
-  * Source recovery point
-  * Destination resource
-  * Status
-
----
-
 ### Restore Job Result
 
 #### Restore Job Details
@@ -559,9 +537,8 @@ Restore test được thực hiện bằng cách khôi phục EFS từ recovery 
 
 #### Screenshot — Restore Job Completed
 
-```markdown
-![Restore Job Completed](./images/w5-restore-completed.png)
-```
+<img width="1640" height="419" alt="image" src="https://github.com/user-attachments/assets/4ed97c89-4005-4fb0-81fb-a921f96d8f2b" />
+
 
 **Mô tả screenshot cần capture:**
 
@@ -574,73 +551,63 @@ Restore test được thực hiện bằng cách khôi phục EFS từ recovery 
 
 ---
 
-### Data Verification sau Restore
+#### Screenshot — Data Before Restore
 
-Sau khi restore hoàn tất, nhóm mount restored EFS để xác minh dữ liệu đã được khôi phục chính xác.
+<img width="1773" height="77" alt="image" src="https://github.com/user-attachments/assets/47997b29-411a-459c-b258-c8b8979c3839" />
 
-#### Mount Restored EFS
-
-```bash
-sudo mount -t nfs4 \
-  -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
-  fs-restored-xxxxx.efs.us-east-1.amazonaws.com:/ \
-  /mnt/efs-restored
-```
-
----
-
-#### Verify Restored Data
-
-```bash
-cat /mnt/efs-restored/sessions/user-1.token
-
-# Expected:
-session_token_abc123def456
-```
-
-```bash
-cat /mnt/efs-restored/uploads/document.pdf.log
-
-# Expected:
-[2026-05-15] User uploaded document.pdf
-```
-
-Dữ liệu sau restore khớp với dữ liệu production trước backup, xác nhận restore thành công.
-
----
-
-#### Screenshot — Restored Data Verification
-
-```markdown
-![Restore Data Verification](./images/w5-restore-data-verification.png)
-```
 
 **Mô tả screenshot cần capture:**
 
-* Terminal session
-* Hiển thị:
+* Terminal hoặc file browser trước khi thực hiện restore
+* Hiển thị dữ liệu hiện tại của EFS production
+* Có xuất hiện file:
 
-  * Mount command
-  * cat file commands
-  * Nội dung file restored
-  * Successful output
+  * `ce4b9b45861b_handler.py`
+* Thể hiện trạng thái dữ liệu mới hơn recovery point backup
 
 ---
 
-#### Screenshot — Data Comparison Before vs After Restore
+#### Screenshot — Data After Restore
 
-```markdown
-![Data Comparison](./images/w5-data-before-after.png)
-```
+<img width="1775" height="97" alt="image" src="https://github.com/user-attachments/assets/4a1bfb2d-db7d-4019-b4bc-39b77ce135b1" />
 
 **Mô tả screenshot cần capture:**
 
-* So sánh dữ liệu:
+* Terminal hoặc file browser sau khi restore EFS
+* Hiển thị dữ liệu restored từ recovery point
+* File:
 
-  * Resource gốc
-  * Resource restored
-* Nội dung file giống nhau
-* Có thể dùng split terminal hoặc 2 cửa sổ
+  * `ce4b9b45861b_handler.py`
+  * không xuất hiện trong restored filesystem
+* Thể hiện dữ liệu đã được restore đúng theo thời điểm snapshot backup
+
+---
+
+#### Giải thích kết quả Restore Verification
+
+Trước khi thực hiện restore, EFS production hiện tại có chứa file:
+
+```text id="3ivzlh"
+ce4b9b45861b_handler.py
+```
+
+Tuy nhiên recovery point được tạo trước thời điểm file này tồn tại, do đó snapshot backup không bao gồm file trên.
+
+Khi thực hiện restore, AWS Backup chỉ khôi phục dữ liệu tồn tại tại thời điểm recovery point được tạo vào restored filesystem hoặc restore directory.
+
+Vì vậy:
+
+* File `ce4b9b45861b_handler.py` không xuất hiện trong dữ liệu restored
+* Điều này xác nhận restore operation hoạt động chính xác theo snapshot timeline
+* Dữ liệu restored phản ánh đúng trạng thái filesystem tại thời điểm backup được tạo
+
+Kết quả này chứng minh:
+
+* Recovery point đã được sử dụng thành công
+* AWS Backup restore hoạt động chính xác
+* Restore không lấy dữ liệu phát sinh sau thời điểm backup
+* Disaster recovery workflow được xác minh thành công
+
 
 ---
 
