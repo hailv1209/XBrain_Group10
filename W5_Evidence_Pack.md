@@ -53,117 +53,106 @@ Output:
 
 ---
 
-## 2. MH1 — Multi-VPC Connectivity
+I) MH1 — Multi-VPC Connectivity
+Path C — Justified Single-VPC: 
+1. Tổng quan kiến trúc VPC
+Hệ thống được triển khai trên một VPC duy nhất với tên webapp-group10-vpc, đóng vai trò là mạng nội bộ trung tâm cho toàn bộ hạ tầng ứng dụng trên AWS.
+Kiến trúc mạng được thiết kế theo mô hình phân tầng nhằm tách biệt các thành phần public, private, database và firewall để tăng cường bảo mật và khả năng quản lý traffic.
 
-### Connectivity Decision: Justified Single-VPC with Multi-AZ Enhancement
+a) Thông tin VPC
+Tên VPC: webapp-group10-vpc
+Mô hình: Single VPC Architecture
+Triển khai: Multi-AZ
+Region: us-east-1
+<img width="1522" height="780" alt="image" src="https://github.com/user-attachments/assets/07f8ce78-8338-49d6-aafd-abfa84804515" />
 
-**Path Selected:** ☑️ **Path C — Justified Single-VPC**
+b) Thiết kế Subnet
+Hệ thống sử dụng tổng cộng 12 subnet, được phân bổ trên 3 Availability Zone:
+- us-east-1a
+- us-east-1b
+- us-east-1c
+Mỗi AZ bao gồm:
+- Public Subnet
+Dùng cho các tài nguyên public-facing:
+   + Application Load Balancer (ALB)
+   + NAT Gateway
+   + Internet access
 
-**Rationale for AI Agent Chatbot Application:**
-
-Dự án **AI Agent Chatbot** của webapp-group10 hiện tại được thiết kế để chạy trong một VPC duy nhất với kiến trúc 3-tier rõ ràng, đáp ứng đầy đủ nhu cầu của ứng dụng chatbot:
-
-**Architecture Overview:**
-```
-┌─────────────────────────────────────────┐
-│  VPC: webapp-group10 (10.0.0.0/16)      │
-├─────────────────────────────────────────┤
-│                                         │
-│  Public Tier (Ingress):                 │
-│  - ALB (Application Load Balancer)      │
-│  - NAT Gateway (Egress traffic)         │
-│  ├─ Subnet: 10.0.1.0/24 (AZ-a)         │
-│  └─ Subnet: 10.0.2.0/24 (AZ-b)         │
-│                                         │
-│  Application Tier (Compute):            │
-│  - EC2 instances (Flask/Node.js app)   │
-│  - Lambda functions (Bedrock queries)   │
-│  - EFS mount targets (shared files)     │
-│  ├─ Subnet: 10.0.11.0/24 (AZ-a)        │
-│  └─ Subnet: 10.0.12.0/24 (AZ-b)        │
-│                                         │
-│  Data Tier (Storage & Database):        │
-│  - RDS PostgreSQL (conversation logs)   │
-│  - OpenSearch Serverless (KB vectors)   │
-│  ├─ Subnet: 10.0.21.0/24 (AZ-a)        │
-│  └─ Subnet: 10.0.22.0/24 (AZ-b)        │
-│                                         │
-└─────────────────────────────────────────┘
-```
-<img width="975" height="504" alt="image" src="https://github.com/user-attachments/assets/07352be3-b2f8-45a4-9d80-f3c079fcf9fa" />
-
-
-**Justification cho Single-VPC:**
-1. **Đơn giản hóa kiến trúc:** Ứng dụng chatbot là single-tenant SaaS không cần network isolation cấp VPC. Tất cả components (web frontend, LLM backend, database, embedding store) thuộc về cùng một ứng dụng logic.
-
-2. **Cost-effective:** Single-VPC không cần Transit Gateway ($0.05/hour = $36/month) hay VPC peering management overhead. VPC charge vẫn flat rate $0.07/day cho single VPC.
-
-3. **Latency thấp:** Tất cả tầng chạy cùng VPC → không có inter-VPC latency. Quan trọng cho real-time chat response (target latency < 500ms từ user query tới bot answer).
-
-4. **Easy troubleshooting:** VPC Flow Logs từ một VPC duy nhất dễ analyze hơn. Khi user báo "chatbot slow", có thể trace flow trên một VPC thay vì phải check routing giữa nhiều VPC.
-
-5. **Không có compliance requirement:** Chatbot application không cần comply PCI-DSS (không xử lý payment cards), HIPAA (không xử lý health data), hay bất kỳ regulation nào đòi hỏi network isolation cấp VPC.
-
-**Multi-AZ Enhancement for High Availability:**
-Tất cả subnet tiers được mở rộng sang **Multi-AZ** (us-east-1a và us-east-1b):
-- **Public subnets:** 10.0.1.0/24 (AZ-a), 10.0.2.0/24 (AZ-b)
-  - ALB listeners trên cả 2 AZ
-  - NAT Gateway trên cả 2 AZ (redundancy)
+- Private Subnet
+Dùng cho các tài nguyên nội bộ:
+   + ECS/Fargate services
+   + Backend application
+   + Internal microservices
+     
+- Database Subnet
+Dùng để triển khai cơ sở dữ liệu trong môi trường private:
+   + Amazon RDS
+   + Database services
   
-- **Private app subnets:** 10.0.11.0/24 (AZ-a), 10.0.12.0/24 (AZ-b)
-  - EC2 instances deploy trên cả 2 AZ (Auto Scaling Group)
-  - Lambda functions invoke từ cả 2 AZ
-  - EFS mount targets trên cả 2 AZ
-  
-- **Private data subnets:** 10.0.21.0/24 (AZ-a), 10.0.22.0/24 (AZ-b)
-  - RDS Multi-AZ standby
-  - OpenSearch Serverless replicated (automatic)
+- Firewall Subnet
+Dùng cho AWS Network Firewall nhằm kiểm soát và giám sát traffic mạng.
+c) Route Tables
+Hệ thống sử dụng nhiều route table riêng biệt để quản lý traffic cho từng loại subnet:
+- Public Route Table
+webapp-group10-public-rt
+<img width="1541" height="450" alt="image" src="https://github.com/user-attachments/assets/1d243e4a-cf01-4352-b6a2-9c8dccb4abf9" />
 
-**Khi nào sẽ trigger Multi-VPC transition:**
-1. **Multi-region deployment:** Khi mở rộng sang Singapore, Tokyo, hoặc region khác → sẽ cần VPC riêng per region + Transit Gateway global hub
-2. **Separate staging/production:** Khi team scale và cần strict network isolation giữa prod (sensitive data) vs staging (test data) → sẽ tách thành VPC riêng
-3. **Third-party chatbot integration:** Khi integrate với partner APIs (Slack bot marketplace, Teams integration) → sẽ cần VPC peering với partner infrastructure
-4. **Compliance expansion:** Nếu sau này support healthcare/financial domain → HIPAA/PCI-DSS → sẽ cần dedicated VPC per compliance tier
+Chức năng:
+Route internet traffic thông qua Internet Gateway.
 
-### VPC Flow Logs (Bắt buộc cho mọi VPC)
+- Private Route Tables
+   + webapp-group10-private-1-rt
+   + webapp-group10-private-2-rt
+   + webapp-group10-private-3-rt
+<img width="1598" height="446" alt="image" src="https://github.com/user-attachments/assets/ea7e3f3c-c242-4c91-a263-04a703a64059" />
 
-**Status:** ✅ Enabled on all subnets in webapp-group10 VPC  
-**Destination:** CloudWatch Logs  
-**Log Group:** `/aws/vpc/flowlogs/webapp-group10-chatbot-vpc`  
-**Traffic Type:** ALL (Accept + Reject)  
-**Format:** Extended version with flow metadata
+Chức năng:
+Cho phép private subnet outbound internet thông qua NAT Gateway.
+Không cho phép inbound trực tiếp từ Internet.
 
-**Key Traffic Flows Observable trong Logs:**
+- Database Route Table
+webapp-group10-database-rt
+<img width="1598" height="415" alt="image" src="https://github.com/user-attachments/assets/4063713e-ded0-429f-a37d-b1672c324e07" />
 
-| Flow Type | Source | Destination | Port | Purpose |
-|-----------|--------|-------------|------|---------|
-| User Query | User → ALB | 10.0.1.x | 443 | HTTPS traffic từ user tới chatbot |
-| App Processing | ALB → App tier | 10.0.11.x | 8080 | Flask/Node app processing |
-| LLM Query | Lambda → Bedrock | 0.0.0.0/0 | 443 | Bedrock API calls (via NAT) |
-| KB Search | App → OpenSearch | 10.0.21.x | 443 | Semantic search queries |
-| Chat History | App → RDS | 10.0.21.x | 5432 | Store conversation logs |
-| File Storage | App → EFS | 10.0.11.x (mount target) | 2049 | NFS shared files |
-| Monitoring | App → CloudWatch | 0.0.0.0/0 | 443 | Logs + metrics publish |
+Chức năng:
+Tách biệt traffic database khỏi public network nhằm tăng bảo mật.
 
-**Screenshot - VPC Flow Logs trong CloudWatch:**
-<img width="819" height="344" alt="image" src="https://github.com/user-attachments/assets/afc3adc9-119c-43a9-a882-52bece877e18" />
+- Firewall Route Tables
+    + webapp-group10-network-firewall-subnet-rt-1
+    + webapp-group10-network-firewall-subnet-rt-2
+    + webapp-group10-network-firewall-subnet-rt-3
+<img width="1566" height="447" alt="image" src="https://github.com/user-attachments/assets/0d13619f-0dbe-43e5-98a0-4689f664d0b4" />
+Chức năng:
+    + Điều hướng traffic qua AWS Network Firewall để kiểm tra và lọc lưu lượng mạng.
+2) Network Connectivity
+Hệ thống sử dụng:
+- Internet Gateway
+    + webapp-group10-igw
+<img width="1611" height="335" alt="image" src="https://github.com/user-attachments/assets/a3f5b7b2-6ffb-4e2d-b707-518255109516" />
+Chức năng:
+    + Kết nối public subnet với Internet.
+- NAT Gateway
+    + webapp-group10-regional-nat
+<img width="1583" height="532" alt="image" src="https://github.com/user-attachments/assets/d64881f0-4fc4-41b3-ae88-3a7e0c4494eb" />
+Chức năng:
+    + Cho phép private subnet truy cập Internet outbound mà không expose trực tiếp ra public Internet.
+5. Multi-AZ Architecture
+- Kiến trúc được triển khai trên 3 Availability Zone nhằm:
+- Tăng tính sẵn sàng (High Availability)
+- Đảm bảo khả năng chịu lỗi (Fault Tolerance)
+- Giảm downtime khi một AZ gặp sự cố
+- Phân phối workload hiệu quả hơn
+6. Flow logs
+  a) VPC Flow Logs
+Để giám sát và phân tích lưu lượng mạng trong hệ thống, VPC đã được cấu hình Flow Logs nhằm ghi nhận toàn bộ network traffic đi vào và đi ra khỏi VPC.
+Flow Logs giúp:
+- Theo dõi traffic giữa các subnet
+- Phân tích network connectivity
+- Phát hiện traffic bất thường
+- Hỗ trợ troubleshooting và security monitoring 
+<img width="1602" height="544" alt="image" src="https://github.com/user-attachments/assets/d3c84c35-08d4-4763-aa84-63308779b17d" />
+<img width="1684" height="827" alt="image" src="https://github.com/user-attachments/assets/75c08aeb-bb27-446e-b91f-f035359a9066" />
 
-**Sample Flow Log Entry:**
-```
-version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes 
-start end action log-status
-
-2 379353384462 eni-0123456789abcdef0 10.0.1.25 10.1.2.40 49158 3306 6 1 52 
-1620043391 1620043440 ACCEPT OK
-
-[Giải thích]
-- source: 10.0.1.25 (instance trong VPC A - app tier)
-- destination: 10.1.2.40 (RDS endpoint trong VPC B - database tier)
-- port 3306: MySQL traffic
-- ACCEPT: traffic được cho phép
-```
-
----
 
 ## 3. MH2 — Network Firewall Hardening (Ép buộc tại biên)
 
