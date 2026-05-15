@@ -1458,38 +1458,21 @@ sudo mount -t nfs4 fs-0ed34a016c3fe7c67.efs.us-east-1.amazonaws.com:/ /mnt/efs
 
 ### 9.1 VPC Reachability Analyzer
 
-**Scenario:** Verify connectivity và intentionally break route, then re-verify
+    AWS Reachability Analyzer was used to validate internet connectivity paths. The public subnet path was successfully reachable, while the private subnet path failed due to routing configuration restrictions.
+    
+  <img width="1920" height="510" alt="image" src="https://github.com/user-attachments/assets/d0610c9f-e4a0-41b5-a0b2-b142fad9432e" />
 
-**Test 1 - Before Breaking Route:**
+- Reachable
+  Successful Connectivity Validation
+  
+  <img width="1041" height="835" alt="image" src="https://github.com/user-attachments/assets/3956f8d9-fce2-4ae5-ba0c-2df39aa5c475" />
 
-```bash
-aws ec2 create-network-interface-permission \
-  --network-interface-id eni-0123456789abcdef0 \
-  --principal 379353384462 \
-  --permission ALLOW
+- Not Reachable
+  Connectivity Failure Detection
+  
+  <img width="695" height="647" alt="image" src="https://github.com/user-attachments/assets/294f1876-7da4-46e7-8171-d9669e519541" />
 
-# Reachability Analysis: SUCCESS ✅
-```
 
-**Screenshot - Reachability Success:**
-![Reachability Success](./images/w5-bonus-reachability-success.png)
-
-**Test 2 - After Breaking Route:**
-
-```bash
-# Remove route entry
-aws ec2 delete-route \
-  --route-table-id rtb-xxxxx \
-  --destination-cidr-block 10.1.0.0/16
-
-# Reachability Analysis: UNREACHABLE ❌
-# Reason: Route not found in route table
-```
-
-**Screenshot - Reachability Failure:**
-![Reachability Failure](./images/w5-bonus-reachability-failure.png)
-
----
 
 ### 9.2 Backup Vault Lock (Compliance Mode)
 
