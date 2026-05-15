@@ -930,126 +930,283 @@ HTTP/1.1 403 Forbidden
 
 ### Scaling Pattern đã chọn
 
-**Pattern:** Reserved Concurrency + Throttle Monitoring
+**Pattern:** Provisioned Concurrency (Warm Lambda Instances)
 
-**Lý do chọn:**
+### Lý do chọn
+
+Lambda function của hệ thống được sử dụng cho backend health check API và có khả năng nhận request bất kỳ lúc nào từ frontend hoặc monitoring services.
+
+Trong mô hình Lambda mặc định, khi function không được invoke trong một khoảng thời gian, execution environment sẽ bị giải phóng. Request tiếp theo sẽ gây ra **cold start**, làm tăng latency do Lambda phải khởi tạo runtime environment trước khi xử lý request.
+
+Để giảm cold start latency và đảm bảo response time ổn định cho production workload, nhóm triển khai **Provisioned Concurrency** cho Lambda function.
+
+Provisioned Concurrency giúp:
+
+* Giữ sẵn các Lambda execution environments ở trạng thái warm
+* Loại bỏ cold start khi có request đến
+* Giảm latency cho API response
+* Tăng tính ổn định cho production traffic
+
+---
+
+### Lambda Function được áp dụng
+
+| Thông tin                 | Chi tiết                          |
+| ------------------------- | --------------------------------- |
+| **Function Name**         | webapp-group10-lambda-healthCheck |
+| **Runtime**               | Python 3.11                       |
+| **Scaling Pattern**       | Provisioned Concurrency           |
+| **Provisioned Instances** | 2                                 |
+| **Region**                | us-east-1                         |
+
+---
+
+### Trạng thái trước khi bật Provisioned Concurrency
+
+Trước khi bật Provisioned Concurrency, Lambda function hoạt động theo mô hình on-demand mặc định.
+
+Khi function không được invoke trong thời gian dài, request tiếp theo sẽ tạo cold start.
+
+---
+
+#### Cold Start Test
+
+### Bước thực hiện
+
+1. Tắt Provisioned Concurrency
+2. Chờ Lambda execution environment bị idle
+3. Gửi request mới đến Lambda
+4. Kiểm tra CloudWatch Logs
+
+---
+
+#### Screenshot — Provisioned Concurrency Disabled
+
+<img width="1705" height="775" alt="image" src="https://github.com/user-attachments/assets/3a63cece-c46e-43c4-b8f2-233fdd3040b0" />
+
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → Lambda → Configuration
+* Hiển thị:
+
+  * Provisioned concurrency = Disabled
+  * Current concurrency configuration
+
+---
+
+#### Screenshot — Cold Start Invocation
+
+<img width="1204" height="213" alt="image" src="https://github.com/user-attachments/assets/b2d4d3d0-a0c4-4ce7-88e6-ed98af0587ad" />
+
+**Mô tả screenshot cần capture:**
+
+* Terminal hoặc Postman
+* Request đầu tiên đến Lambda sau idle period
+* Response time cao hơn bình thường
+
+---
+
+#### CloudWatch Logs — Cold Start Detected
+
+CloudWatch Logs cho thấy Lambda phải khởi tạo execution environment trước khi xử lý request.
+
+Ví dụ log:
+
+```text id="8z3n0g"
+INIT_START Runtime Version: python:3.11
+INIT_REPORT Init Duration: 1450.32 ms
+REPORT RequestId: xxx Duration: 220.11 ms
 ```
-Lambda bedrock-query-handler có thể được gọi đồng thời từ nhiều user.
-Nếu không set reserved concurrency, function có thể nuốt hết account limit
-và làm mọi function khác bị throttle.
 
-Bằng cách set reserved concurrency, bảo vệ các function khác trong account
-và có thể observe throttle behavior khi vượt giới hạn.
+`Init Duration` xuất hiện trong log xác nhận Lambda đã xảy ra cold start.
+
+---
+
+#### Screenshot — Cold Start Logs
+
+<img width="1647" height="573" alt="image" src="https://github.com/user-attachments/assets/727224db-6f4f-4752-afbb-a5a14bfa5143" />
+
+
+**Mô tả screenshot cần capture:**
+
+* CloudWatch Logs
+* Hiển thị:
+
+  * `INIT_START`
+  * `INIT_REPORT`
+  * `Init Duration`
+* Chứng minh Lambda cold start đã xảy ra
+
+---
+
+### Bật Provisioned Concurrency
+
+Sau khi xác nhận cold start behavior, nhóm tiến hành bật Provisioned Concurrency cho Lambda function.
+
+---
+
+#### Provisioned Concurrency Configuration
+
+| Thông tin                   | Chi tiết                          |
+| --------------------------- | --------------------------------- |
+| **Function Name**           | webapp-group10-lambda-healthCheck |
+| **Provisioned Concurrency** | 2                                 |
+| **Alias**                   | prod                              |
+| **Status**                  | ✅ Enabled                         |
+
+---
+
+#### AWS CLI Command
+
+```bash id="2v3nq6"
+aws lambda put-provisioned-concurrency-config \
+  --function-name webapp-group10-lambda-healthCheck \
+  --qualifier prod \
+  --provisioned-concurrent-executions 2
 ```
 
 ---
 
-### Reserved Concurrency Configuration
+#### Screenshot — Provisioned Concurrency Enabled
 
-#### Cấu hình
+<img width="1687" height="742" alt="image" src="https://github.com/user-attachments/assets/511ec571-d6b2-4f6b-a475-7a18392757a2" />
 
-| Thông tin | Chi tiết |
-|-----------|---------|
-| **Function** | bedrock-query-handler |
-| **Reserved Concurrency** | 50 concurrent execution |
-| **Unreserved Account Quota** | 1,000 (AWS default) - 50 = 950 |
 
-**AWS CLI Command:**
+**Mô tả screenshot cần capture:**
 
-```bash
-aws lambda put-function-concurrency \
-  --function-name bedrock-query-handler \
-  --reserved-concurrent-executions 50
-```
+* AWS Console → Lambda → Aliases / Concurrency
+* Hiển thị:
 
-**Screenshot - Reserved Concurrency Set:**
-![Reserved Concurrency](./images/w5-mh5-reserved-concurrency.png)
+  * Provisioned concurrency = 2
+  * Alias = prod
+  * Status = Ready
 
 ---
 
-#### Load Test & Throttle Behavior
+#### Screenshot — Warm Instances Ready
 
-**Load Test Setup:**
+<img width="1720" height="897" alt="image" src="https://github.com/user-attachments/assets/912a78bf-cfe6-42f4-b207-3623eab236da" />
 
-```bash
-# Sử dụng Apache JMeter hoặc AWS Lambda Load Test
-# Gửi 100 concurrent requests dalam 10 giây
 
-for i in {1..100}; do
-  aws lambda invoke \
-    --function-name bedrock-query-handler \
-    --invocation-type RequestResponse \
-    --payload '{"query":"Test query"}' \
-    response-$i.json &
-done
-wait
-```
+**Mô tả screenshot cần capture:**
 
-**Result:**
-```
-- First 50 invocations: ✅ ACCEPTED (concurrent executions)
-- Next 50 invocations: ❌ THROTTLED (ServiceError: TooManyRequestsException)
-- Error Rate: 50%
-```
+* AWS Console → Lambda
+* Hiển thị:
 
-**Screenshot - CloudWatch Metrics (Throttles):**
-![Throttles Metric](./images/w5-mh5-throttles-metric.png)
-
-**CloudWatch Logs - Throttle Event:**
-
-```json
-{
-  "timestamp": "2026-05-15T15:30:45.123Z",
-  "requestId": "xxx-yyy-zzz",
-  "errorType": "TooManyRequestsException",
-  "errorMessage": "Rate exceeded",
-  "statusCode": 429,
-  "functionName": "bedrock-query-handler",
-  "reservedConcurrency": 50,
-  "currentConcurrency": 51
-}
-```
-
-**Screenshot - Throttle Error in CloudWatch Logs:**
-![Throttle Logs](./images/w5-mh5-throttle-logs.png)
+  * Provisioned concurrent executions = 2
+  * Allocated provisioned environments
+  * Status Ready / Available
 
 ---
 
-#### Metric giám sát
+### Test sau khi bật Provisioned Concurrency
 
-| Metric | Value | Ý nghĩa |
-|--------|-------|---------|
-| **Invocations** | 2,453 | Tổng invocation trong test |
-| **Throttles** | 1,227 | Số request bị throttle (50%) |
-| **Duration** | 3,425 ms | Trung bình execution time |
-| **Errors** | 1,227 | Số lỗi do throttle |
-| **ConcurrentExecutions** | 50 | Max concurrent (= reserved) |
+Sau khi bật Provisioned Concurrency, Lambda request được xử lý bởi warm execution environment.
 
-**Screenshot - All Metrics Dashboard:**
-![Metrics Dashboard](./images/w5-mh5-metrics-dashboard.png)
+Request không còn gặp cold start.
 
+---
+
+#### CloudWatch Logs — Warm Invocation
+
+Ví dụ log sau khi bật Provisioned Concurrency:
+
+```text id="r0r1f8"
+START RequestId: xxx Version: prod
+REPORT RequestId: xxx Duration: 85.11 ms
+```
+
+CloudWatch Logs không còn xuất hiện:
+
+```text id="gsvh8t"
+INIT_REPORT
+```
+
+Điều này xác nhận request đã được xử lý bởi warm instance.
+
+---
+
+#### Screenshot — Warm Invocation Logs
+
+<img width="1357" height="166" alt="image" src="https://github.com/user-attachments/assets/5882e104-8e06-4451-a0ac-6f7eff7023b6" />
+
+**Mô tả screenshot cần capture:**
+
+* CloudWatch Logs
+* Hiển thị:
+
+  * Request execution logs
+  * Không có `INIT_REPORT`
+  * Không có `Init Duration`
+* Chứng minh Lambda đã chạy trên warm instance
+
+---
+
+### So sánh trước và sau khi bật Provisioned Concurrency
+
+| Trạng thái                         | Cold Start | Init Duration | Response Stability |
+| ---------------------------------- | ---------- | ------------- | ------------------ |
+| **Before Provisioned Concurrency** | Có         | ~1450 ms      | Không ổn định      |
+| **After Provisioned Concurrency**  | Không      | 0 ms          | Ổn định            |
+
+---
+
+### Chi phí Provisioned Concurrency
+
+Provisioned Concurrency được tính phí theo:
+
+```text id="w5gq7d"
+Provisioned Concurrency Cost =
+Number of Instances × Memory Size × Time × Pricing Rate
+```
+
+---
+
+#### Cost Estimation
+
+Cấu hình hiện tại:
+
+| Thông tin                 | Giá trị                     |
+| ------------------------- | --------------------------- |
+| **Provisioned Instances** | 2                           |
+| **Memory Allocation**     | 512 MB (0.512 GB)           |
+| **Duration**              | 1 hour                      |
+| **Region**                | us-east-1                   |
+| **Pricing Rate**          | $0.0000166667 per GB-second |
+
+---
+
+#### Cost Calculation
+
+<img width="1357" height="166" alt="image" src="https://github.com/user-attachments/assets/b2b0cb75-6ec3-463b-9cc7-4832b5c3585e" />
+
+```text id="y2eq6r"
+2 × 0.512 × 3600 × 0.0000166667
+= approximately $0.061 per hour
+```
 ---
 
 ### Pattern Rationale & Production Plan
 
-```
-Why Reserved Concurrency for bedrock-query-handler:
+Provisioned Concurrency phù hợp với production workload của hệ thống vì:
 
-1. Protection: Function này có thể spike traffic khi nhiều user query cùng lúc.
-   Set reserved concurrency = 50 đảm bảo function không nuốt hết account limit.
+1. Giảm latency cho API request
+2. Loại bỏ cold start delay
+3. Tăng trải nghiệm người dùng
+4. Đảm bảo Lambda luôn sẵn sàng xử lý request
 
-2. Predictable: Biết chắc 50 concurrent execution sẵn sàng, không phải đợi
-   cold start khi vượt burst limit.
+Kế hoạch production:
 
-3. Observable: CloudWatch metric Throttles cho thấy khi nào app đã đạt giới hạn
-   và cần scale (upgrade concurrency hoặc optimize code).
+* Monitor Lambda duration và concurrent executions
+* Theo dõi CloudWatch metrics:
 
-Khi production scale lên:
-- Monitor Throttles metric hàng ngày
-- Nếu Throttles > 5% → tăng reserved concurrency lên 100
-- Nếu Duration > 30s → optimize Lambda code hoặc switch sang
-  Provisioned Concurrency để eliminate cold start
-```
+  * Duration
+  * ConcurrentExecutions
+  * ProvisionedConcurrencyUtilization
+* Scale provisioned instances nếu traffic tăng
+* Kết hợp Auto Scaling cho Provisioned Concurrency trong production environment
+
 
 ---
 
