@@ -131,8 +131,11 @@ Route internet traffic thông qua Internet Gateway.
 <img width="1598" height="446" alt="image" src="https://github.com/user-attachments/assets/ea7e3f3c-c242-4c91-a263-04a703a64059" />
 
 Chức năng:
-Cho phép private subnet outbound internet thông qua NAT Gateway.
-Không cho phép inbound trực tiếp từ Internet.
+Private subnet route table được cấu hình chuyển toàn bộ outbound traffic
+(0.0.0.0/0) tới AWS Network Firewall Endpoint.
+
+Điều này đảm bảo mọi traffic đều phải được inspection
+trước khi ra Internet thông qua NAT Gateway.
 
 - Database Route Table
 webapp-group10-database-rt
@@ -147,7 +150,19 @@ Tách biệt traffic database khỏi public network nhằm tăng bảo mật.
     + webapp-group10-network-firewall-subnet-rt-3
 <img width="1566" height="447" alt="image" src="https://github.com/user-attachments/assets/0d13619f-0dbe-43e5-98a0-4689f664d0b4" />
 Chức năng:
-    + Điều hướng traffic qua AWS Network Firewall để kiểm tra và lọc lưu lượng mạng.
+
+   Route table của firewall subnet được cấu hình chuyển outbound traffic
+từ AWS Network Firewall tới NAT Gateway trước khi truy cập Internet.
+
+Kiến trúc này đảm bảo traffic flow hoạt động theo mô hình:
+
+     Application Workload
+→ AWS Network Firewall
+→ NAT Gateway
+→ Internet
+
+Firewall subnet đóng vai trò xử lý và forward traffic
+sau khi hoàn tất quá trình stateful inspection và security filtering.
       
 2) Network Connectivity
 
