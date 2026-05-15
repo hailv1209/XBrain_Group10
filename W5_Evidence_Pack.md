@@ -622,18 +622,16 @@ Nhóm đã triển khai Usage Plan để giới hạn request rate và burst cap
 
 | Thông tin           | Chi tiết                  |
 | ------------------- | ------------------------- |
-| **Usage Plan Name** | webapp-group10-usage-plan |
-| **Rate Limit**      | 100 requests/second       |
-| **Burst Limit**     | 200 requests              |
-| **Quota**           | 10,000 requests/day       |
+| **Usage Plan Name** | webapp-group10-health-check-plan |
+| **Rate Limit**      | 20 requests/second       |
+| **Burst Limit**     | 60 requests              |
+| **Quota**           | 5,000 requests/day       |
 
 ---
 
 ## Screenshot — Usage Plan & Throttling
 
-```markdown
-![Usage Plan](./images/w5-mh4-throttling.png)
-```
+<img width="1645" height="592" alt="image" src="https://github.com/user-attachments/assets/ff67d374-2945-4d73-bc71-f6ea2ed290b8" />
 
 ### Mô tả screenshot cần capture
 
