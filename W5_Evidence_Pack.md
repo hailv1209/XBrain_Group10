@@ -125,7 +125,9 @@ Tách biệt traffic database khỏi public network nhằm tăng bảo mật.
 <img width="1566" height="447" alt="image" src="https://github.com/user-attachments/assets/0d13619f-0dbe-43e5-98a0-4689f664d0b4" />
 Chức năng:
     + Điều hướng traffic qua AWS Network Firewall để kiểm tra và lọc lưu lượng mạng.
+      
 2) Network Connectivity
+
 Hệ thống sử dụng:
 - Internet Gateway
     + webapp-group10-igw
@@ -137,13 +139,16 @@ Chức năng:
 <img width="1583" height="532" alt="image" src="https://github.com/user-attachments/assets/d64881f0-4fc4-41b3-ae88-3a7e0c4494eb" />
 Chức năng:
     + Cho phép private subnet truy cập Internet outbound mà không expose trực tiếp ra public Internet.
+      
 5. Multi-AZ Architecture
+   
 - Kiến trúc được triển khai trên 3 Availability Zone nhằm:
 - Tăng tính sẵn sàng (High Availability)
 - Đảm bảo khả năng chịu lỗi (Fault Tolerance)
 - Giảm downtime khi một AZ gặp sự cố
 - Phân phối workload hiệu quả hơn
 6. Flow logs
+  
   a) VPC Flow Logs
 Để giám sát và phân tích lưu lượng mạng trong hệ thống, VPC đã được cấu hình Flow Logs nhằm ghi nhận toàn bộ network traffic đi vào và đi ra khỏi VPC.
 Flow Logs giúp:
