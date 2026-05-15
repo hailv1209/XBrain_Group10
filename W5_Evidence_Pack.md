@@ -1593,61 +1593,128 @@ AWS Reachability Analyzer was used to validate internet connectivity paths. The 
 
 
 
-### 9.2 Backup Vault Lock (Compliance Mode)
+### 9.2 Lambda Power Tuning
 
-**Cấu hình:**
+Nhóm triển khai AWS Lambda Power Tuning để benchmark Lambda function với nhiều mức memory khác nhau nhằm tìm cấu hình tối ưu giữa cost và performance.
 
-```bash
-aws backup put-backup-vault-lock-configuration \
-  --backup-vault-name webapp-group10-backup-vault \
-  --min-retention-days 7 \
-  --max-retention-days 365 \
-  --lock-configuration OverridableForDays=0
+Lambda được sử dụng để test:
+
+```text id="6c7u7v"
+webapp-group10-lambda-healthCheck
 ```
-
-**Effect:**
-```
-Sau khi set Vault Lock ở Compliance Mode:
-- Không IAM principal nào (kể cả root) xóa được recovery point
-- Chỉ có thể delete sau khi retention period hết
-- Bảo vệ data không bị xóa vô tình
-```
-
-**Screenshot - Vault Lock Enabled:**
-![Vault Lock](./images/w5-bonus-vault-lock.png)
 
 ---
 
-### 9.3 Custom Domain trên API Gateway
+### Deploy Lambda Power Tuning
 
-**Certificate từ ACM:**
+AWS Lambda Power Tuning được deploy dưới dạng AWS Step Functions workflow.
+
+#### Screenshot — Deploy Lambda Power Tuning
+
+<img width="1183" height="646" alt="image" src="https://github.com/user-attachments/assets/a29a47d3-d57e-4a9b-b822-fbd21a1163c7" />
+<img width="1161" height="664" alt="image" src="https://github.com/user-attachments/assets/11aaf9cb-1ab5-40da-9884-0367e4570e72" />
+
+
+**Mô tả screenshot cần capture:**
+
+* AWS Console → Step Functions
+* Hiển thị:
+
+  * Lambda Power Tuning state machine
+  * Deployment thành công
+
+---
+
+### Input Configuration
+
+Nhóm tạo file input để benchmark Lambda ở nhiều mức RAM khác nhau.
+
+#### Input File
+
+```json id="rzcmv0"
+{
+  "lambdaARN": "arn:aws:lambda:us-east-1:379353384462:function:webapp-group10-lambda-healthCheck",
+  "powerValues": [128, 256, 512, 1024, 1536, 2048],
+  "num": 10,
+  "payload": {},
+  "strategy": "balanced"
+}
 ```
-Domain: api.webapp-group10.example.com
-Certificate: ACM cert (valid)
-```
 
-**Cấu hình:**
+#### Ý nghĩa cấu hình
 
-```bash
-aws apigateway create-domain-name \
-  --domain-name "api.webapp-group10.example.com" \
-  --certificate-arn "arn:aws:acm:us-east-1:379353384462:certificate/xxxxx"
+| Parameter       | Ý nghĩa                                       |
+| --------------- | --------------------------------------------- |
+| **lambdaARN**   | Lambda cần benchmark                          |
+| **powerValues** | Các mức RAM cần test                          |
+| **num**         | Số lần invoke mỗi mức RAM                     |
+| **payload**     | Event gửi vào Lambda                          |
+| **strategy**    | Strategy tối ưu (`cost`, `speed`, `balanced`) |
 
-aws apigateway create-base-path-mapping \
-  --domain-name "api.webapp-group10.example.com" \
-  --rest-api-id abc123def \
-  --stage prod \
-  --base-path ""
-```
+---
 
-**Result:**
-```
-Old endpoint: https://abc123def.execute-api.us-east-1.amazonaws.com/prod
-New endpoint: https://api.webapp-group10.example.com
-```
+#### Screenshot — Power Tuning Input File
 
-**Screenshot - Custom Domain Set:**
-![Custom Domain](./images/w5-bonus-custom-domain.png)
+<img width="1057" height="228" alt="image" src="https://github.com/user-attachments/assets/1951389a-4fe1-4f3d-999f-4b8c031db2e6" />
+
+
+**Mô tả screenshot cần capture:**
+
+* File JSON input
+* Hiển thị:
+
+  * lambdaARN
+  * powerValues
+  * strategy
+  * num
+
+---
+
+### Chạy Lambda Power Tuning
+
+Nhóm thực hiện chạy Step Functions workflow với file input đã tạo.
+
+#### Screenshot — Running Power Tuning
+
+<img width="1192" height="205" alt="image" src="https://github.com/user-attachments/assets/d45a185e-efc5-4391-a67b-c13e785e09f8" />
+
+
+**Mô tả screenshot cần capture:**
+
+* AWS Step Functions
+* Hiển thị:
+
+  * Execution running/completed
+  * Workflow states
+  * Benchmark progress
+
+---
+
+### Kết quả Power Tuning
+
+#### Screenshot — Power Tuning Result
+
+<img width="1146" height="574" alt="image" src="https://github.com/user-attachments/assets/20a50eb0-c5f0-4714-bb58-516f39f4b2ff" />
+
+
+**Mô tả screenshot cần capture:**
+
+* Output graph hoặc visualization
+* Hiển thị:
+
+  * Cost vs duration
+  * Recommended memory size
+  * So sánh performance giữa các mức RAM
+
+---
+
+### Kết quả đạt được
+
+* Benchmark Lambda với nhiều mức memory khác nhau
+* So sánh execution duration và estimated cost
+* Xác định memory configuration tối ưu theo strategy `balanced`
+* Có cơ sở tối ưu Lambda production workload
+
 
 ---
 
